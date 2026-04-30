@@ -270,6 +270,17 @@ tr:hover td{background:var(--bg2)}
 .empty-state{text-align:center;padding:48px 24px;color:var(--text2)}
 .empty-icon{font-size:40px;display:block;margin-bottom:12px;opacity:.5}
 
+/* ── Notification items ── */
+.notif-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:8px;display:flex;gap:12px;transition:background .15s;cursor:pointer}
+.notif-item:hover{background:var(--bg2)}
+.notif-item.unread{border-left:3px solid var(--accent);background:var(--accent-lt)}
+.notif-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.notif-text{font-size:12px;color:var(--text2);line-height:1.5}
+.notif-time{font-size:10px;color:var(--text3);margin-top:4px}
+.notif-action{display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:none}
+
 /* ── Toast ── */
 #toast{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
 .toast{padding:11px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:var(--sh-lg);animation:slideUp .3s ease}
@@ -388,10 +399,7 @@ tr:hover td{background:var(--bg2)}
       <label>Contraseña</label>
       <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px;margin-top:4px" onclick="doLogin()">Ingresar al sistema →</button>
-    <div style="margin-top:16px;text-align:center">
-      <button onclick="showWorkerSetup()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;text-decoration:underline">Cambiar URL del Worker</button>
-    </div>
+    <button id="login-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px;margin-top:4px" onclick="doLogin()">Ingresar al sistema →</button>
   </div>
 </div>
 
@@ -414,6 +422,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="nav-section">
         <div class="nav-label">Sistema</div>
+        <button class="nav-item" id="nav-notif" onclick="nav('notif',this)"><span class="nav-icon">🔔</span>Notificaciones<span class="nav-badge" id="nav-notif-badge" style="display:none">0</span></button>
         <button class="nav-item" id="nav-config" onclick="nav('config',this)"><span class="nav-icon">⚙️</span>Configuración</button>
         <button class="nav-item" id="nav-usuarios" onclick="nav('usuarios',this)" style="display:none"><span class="nav-icon">👥</span>Usuarios</button>
       </div>
@@ -773,6 +782,27 @@ tr:hover td{background:var(--bg2)}
       </div>
     </div>
 
+    <!-- ═══ NOTIFICACIONES ═══ -->
+    <div class="view view-pad" id="view-notif">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div><h2 style="font-size:16px;font-weight:700">Notificaciones</h2><p style="font-size:13px;color:var(--text2);margin-top:2px">Actividad en tiempo real del sistema y los clientes</p></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="loadNotifications()">↺ Actualizar</button>
+          <button class="btn btn-secondary btn-sm" onclick="markAllRead()">✓ Marcar todo como leído</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="notif-filters">
+        <button class="filter-chip active" onclick="setNotifFilter('all',this)">Todos</button>
+        <button class="filter-chip" onclick="setNotifFilter('new_contact',this)">Nuevos clientes</button>
+        <button class="filter-chip" onclick="setNotifFilter('handoff',this)">Derivaciones</button>
+        <button class="filter-chip" onclick="setNotifFilter('conv_active',this)">Conversaciones</button>
+        <button class="filter-chip" onclick="setNotifFilter('missing_image',this)">Imágenes faltantes</button>
+        <button class="filter-chip" onclick="setNotifFilter('recontacto',this)">Recontacto</button>
+        <button class="filter-chip" onclick="setNotifFilter('human_msg',this)">Mensajes manuales</button>
+      </div>
+      <div id="notif-list"></div>
+    </div>
+
     <!-- ═══ USUARIOS ═══ -->
     <div class="view view-pad" id="view-usuarios">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -1110,14 +1140,20 @@ async function doLogin() {
   const username = document.getElementById('login-user').value.trim()
   const password = document.getElementById('login-pass').value
   const errEl = document.getElementById('login-error')
+  const btn = document.getElementById('login-btn')
   errEl.style.display = 'none'
   if (!username || !password) { errEl.textContent = 'Ingresá usuario y contraseña'; errEl.style.display = 'block'; return }
+  btn.textContent = 'Conectando…'; btn.disabled = true
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
     const r = await fetch(API + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(KEY ? { 'X-Dashboard-Key': KEY } : {}) },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password }),
+      signal: controller.signal
     })
+    clearTimeout(timeout)
     const d = await r.json()
     if (d.ok && d.token) {
       sessionToken = d.token
@@ -1129,9 +1165,15 @@ async function doLogin() {
       errEl.textContent = d.error || 'Usuario o contraseña incorrectos'
       errEl.style.display = 'block'
     }
-  } catch {
-    errEl.textContent = 'No se pudo conectar con el servidor'
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      errEl.textContent = 'El servidor tardó demasiado en responder. Si está en Render, puede estar iniciando (espera 30s y reintentá).'
+    } else {
+      errEl.textContent = 'No se pudo conectar con el servidor. Verificá la URL del worker.'
+    }
     errEl.style.display = 'block'
+  } finally {
+    btn.textContent = 'Ingresar al sistema →'; btn.disabled = false
   }
 }
 
@@ -1168,11 +1210,14 @@ function bootApp() {
   loadCatalog()
   loadSettings().then(() => initAgents())
   init()
+  // Load notification count + connect live stream
+  loadNotifications()
+  connectNotifStream()
 }
 
 function applyRoleNav(role) {
   // superadmin: all; administracion: no usuarios; usuario: only negocio+inbox
-  const allNavs = { panel: true, negocio: true, agentes: true, inbox: true, config: true, usuarios: false }
+  const allNavs = { panel: true, negocio: true, agentes: true, inbox: true, notif: true, config: true, usuarios: false }
   if (role === 'superadmin') {
     allNavs.usuarios = true
   } else if (role === 'administracion') {
@@ -1199,18 +1244,20 @@ function boot() {
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════
-const titles = { panel:'Panel', negocio:'Mi Negocio', agentes:'Agentes IA', inbox:'Conversaciones', config:'Configuración', usuarios:'Usuarios' }
+const titles = { panel:'Panel', negocio:'Mi Negocio', agentes:'Agentes IA', inbox:'Conversaciones', notif:'Notificaciones', config:'Configuración', usuarios:'Usuarios' }
 function nav(id, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'))
   document.getElementById('view-' + id).classList.add('active')
   btn.classList.add('active')
   document.getElementById('hdr-title').textContent = titles[id]
+  stopConvPolling()
   if (id === 'inbox') loadConversations()
   if (id === 'negocio') loadSettings()
   if (id === 'agentes') { loadSettings(); initAgents() }
   if (id === 'config') { loadStatus(); loadSettings() }
   if (id === 'usuarios') { loadUsers(); loadActivityLog() }
+  if (id === 'notif') loadNotifications()
 }
 
 function bizTab(id, btn) {
@@ -1396,6 +1443,7 @@ const hilState = {}
 
 async function openConv(id, name, phone) {
   activeConvId = id
+  startConvPolling(id)
   renderConvList()
   const area = document.getElementById('chat-area')
   area.innerHTML = `<div class="chat-header"><div class="conv-av" style="width:36px;height:36px;font-size:14px">${(name||'?')[0].toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(name)}</div><div style="font-size:11px;color:var(--text2)">${phone}</div></div><span class="badge ${hilState[id] ? 'badge-blue' : 'badge-green'}">${hilState[id] ? '🧑 Agente humano' : '🤖 Bot activo'}</span></div><div class="chat-msgs" id="msgs-area"><div style="text-align:center;color:var(--text2);padding:20px">Cargando…</div></div><div class="chat-input-area" id="chat-input-zone"></div>`
@@ -1446,11 +1494,11 @@ function renderInputZone(id) {
   if (!zone) return
   const active = hilState[id]
   zone.innerHTML = active ? `
-    <div style="background:var(--info-lt);padding:6px 14px;font-size:11px;color:#1d4ed8;font-weight:500">🧑 Modo manual activo — tus mensajes van directo al cliente</div>
+    <div style="background:var(--info-lt);padding:6px 14px;font-size:11px;color:#1d4ed8;font-weight:500">🧑 Modo manual activo — tus mensajes van directo al cliente por WhatsApp</div>
     <div class="chat-input-row" style="padding:10px 14px">
-      <textarea id="manual-input" placeholder="Escribí tu respuesta…" rows="1"></textarea>
+      <textarea id="manual-input" placeholder="Escribí tu respuesta…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendManual(${id})}"></textarea>
       <button class="btn btn-primary btn-sm" onclick="sendManual(${id})">Enviar</button>
-    </div>` : `<div style="padding:10px 14px;text-align:center;font-size:12px;color:var(--text2)">🤖 El bot está manejando esta conversación automáticamente.</div>`
+    </div>` : `<div style="padding:10px 14px;text-align:center;font-size:12px;color:var(--text2)">🤖 El bot está manejando esta conversación automáticamente.<br/><span style="font-size:11px;color:var(--text3)">Tomá el control para responder manualmente.</span></div>`
 }
 
 function toggleHil(id) {
@@ -1459,11 +1507,71 @@ function toggleHil(id) {
   toast(hilState[id] ? 'Tomaste el control de la conversación' : 'El bot retomó la conversación')
 }
 
-function sendManual(id) {
+let _convPollInterval = null
+
+function stopConvPolling() {
+  if (_convPollInterval) { clearInterval(_convPollInterval); _convPollInterval = null }
+}
+
+function startConvPolling(id) {
+  stopConvPolling()
+  _convPollInterval = setInterval(async () => {
+    if (activeConvId !== id) { stopConvPolling(); return }
+    try {
+      const d = await apiFetch(`/api/conversations/${id}/messages`)
+      const msgs = d.messages || []
+      const area = document.getElementById('msgs-area')
+      if (!area || !msgs.length) return
+      const currentCount = area.querySelectorAll('.bubble-wrap').length
+      if (msgs.length === currentCount) return
+      // Render new messages
+      const scrolledToBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 60
+      area.innerHTML = msgs.map(m => {
+        const isAI = m.sender === 'ai'
+        const isHuman = m.sender === 'human'
+        const agentMeta = (isAI || isHuman)
+          ? (isHuman ? { icon: '🧑', label: 'Operador', cls: 'at-generalista' } : agentLabel(m.agent_type))
+          : { icon: '👤', label: 'Cliente', cls: 'at-cliente' }
+        return `<div class="bubble-wrap ${m.sender === 'client' ? 'client' : 'ai'}">
+          <div class="bubble-av" title="${agentMeta.label}">${agentMeta.icon}</div>
+          <div>
+            <div class="bubble">${esc(m.content || '')}</div>
+            <div class="bubble-meta">${fmtDateTime(m.created_at)}<span class="audit-tag ${agentMeta.cls}">${agentMeta.label}</span></div>
+          </div>
+        </div>`
+      }).join('')
+      if (scrolledToBottom) setTimeout(() => { area.scrollTop = area.scrollHeight }, 50)
+    } catch {}
+  }, 4000)
+}
+
+async function sendManual(id) {
   const input = document.getElementById('manual-input')
-  if (!input?.value.trim()) return
-  toast('Funcionalidad de envío manual próximamente disponible')
-  input.value = ''
+  const msg = input?.value.trim()
+  if (!msg) return
+  input.disabled = true
+  try {
+    const d = await apiFetch(`/api/conversations/${id}/send`, { method: 'POST', body: JSON.stringify({ message: msg }) })
+    if (d.ok) {
+      input.value = ''
+      // Refresh messages immediately
+      const d2 = await apiFetch(`/api/conversations/${id}/messages`)
+      const msgs = d2.messages || []
+      const area = document.getElementById('msgs-area')
+      if (area && msgs.length) {
+        area.innerHTML = msgs.map(m => {
+          const isHuman = m.sender === 'human'
+          const agentMeta = isHuman ? { icon: '🧑', label: 'Operador', cls: 'at-generalista' } : (m.sender === 'ai' ? agentLabel(m.agent_type) : { icon: '👤', label: 'Cliente', cls: 'at-cliente' })
+          return `<div class="bubble-wrap ${m.sender === 'client' ? 'client' : 'ai'}">
+            <div class="bubble-av">${agentMeta.icon}</div>
+            <div><div class="bubble">${esc(m.content || '')}</div><div class="bubble-meta">${fmtDateTime(m.created_at)}<span class="audit-tag ${agentMeta.cls}">${agentMeta.label}</span></div></div>
+          </div>`
+        }).join('')
+        setTimeout(() => { area.scrollTop = area.scrollHeight }, 50)
+      }
+    } else toast(d.error || 'Error al enviar', 'err')
+  } catch { toast('Error de conexión', 'err') }
+  finally { if (input) input.disabled = false; input?.focus() }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2342,6 +2450,127 @@ function initCalendar() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════
+const NOTIF_META = {
+  new_contact:   { icon: '👤', bg: 'var(--accent-lt)',  color: 'var(--accent-dk)',  label: 'Nuevo cliente' },
+  conv_active:   { icon: '💬', bg: 'var(--info-lt)',    color: '#1d4ed8',           label: 'Conversación' },
+  handoff:       { icon: '📱', bg: 'var(--danger-lt)',  color: '#b91c1c',           label: 'Derivación' },
+  missing_image: { icon: '🖼️', bg: 'var(--warn-lt)',  color: '#b45309',           label: 'Imagen faltante' },
+  image_sent:    { icon: '📸', bg: '#f3e8ff',           color: '#7c3aed',           label: 'Imagen enviada' },
+  recontacto:    { icon: '🔄', bg: 'var(--bg3)',        color: 'var(--text2)',      label: 'Recontacto' },
+  human_msg:     { icon: '🧑', bg: 'var(--info-lt)',    color: '#1d4ed8',           label: 'Mensaje manual' },
+  human_takeover:{ icon: '🎛️', bg: 'var(--warn-lt)',  color: '#b45309',           label: 'Toma de control' },
+}
+
+let _notifFilter = 'all'
+let _allNotifs = []
+let notifSseSource = null
+
+function setNotifFilter(type, btn) {
+  _notifFilter = type
+  document.querySelectorAll('#notif-filters .filter-chip').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  renderNotifications()
+}
+
+async function loadNotifications() {
+  try {
+    const d = await apiFetch('/api/notifications')
+    _allNotifs = d.notifications || []
+    updateNotifBadge(d.unread || 0)
+    renderNotifications()
+  } catch {}
+}
+
+function renderNotifications() {
+  const el = document.getElementById('notif-list')
+  if (!el) return
+  const filtered = _notifFilter === 'all' ? _allNotifs : _allNotifs.filter(n => n.type === _notifFilter)
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><span class="empty-icon">🔔</span><p>Sin notificaciones' + (_notifFilter !== 'all' ? ' en esta categoría' : '') + '</p></div>'
+    return
+  }
+  el.innerHTML = filtered.map(n => {
+    const m = NOTIF_META[n.type] || { icon: '📋', bg: 'var(--bg3)', color: 'var(--text)', label: n.type }
+    const data = n.data || {}
+    let actions = ''
+    if (data.convId) actions += `<a class="notif-action" onclick="nav('inbox',document.getElementById('nav-inbox'));setTimeout(()=>openConvById(${data.convId}),300)">→ Ver conversación</a>`
+    if (data.waLink) actions += ` &nbsp; <a class="notif-action" href="${data.waLink}" target="_blank">📲 Abrir en WhatsApp</a>`
+    if (data.productId) actions += ` &nbsp; <a class="notif-action" onclick="nav('negocio',document.getElementById('nav-negocio'));setTimeout(()=>{bizTab('productos',document.querySelector('[onclick*=productos]'))},300)">→ Ir al producto</a>`
+    if (data.summary) actions += `<div style="margin-top:6px;background:var(--bg3);border-radius:var(--r-xs);padding:8px 10px;font-size:11px;color:var(--text2);line-height:1.5">${esc(data.summary)}</div>`
+    return `<div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead(${n.id},this)">
+      <div class="notif-icon" style="background:${m.bg};color:${m.color}">${m.icon}</div>
+      <div class="notif-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+          <span class="notif-title">${esc(n.title)}</span>
+          <span class="badge badge-gray" style="font-size:10px">${m.label}</span>
+        </div>
+        <div class="notif-text">${esc(n.body || '')}</div>
+        ${actions}
+        <div class="notif-time">${fmtDateTime(n.created_at)}</div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+async function markNotifRead(id, el) {
+  if (el && !el.classList.contains('unread')) return
+  if (el) el.classList.remove('unread')
+  try {
+    await apiFetch(`/api/notifications/${id}/read`, { method: 'PUT' })
+    const n = _allNotifs.find(x => x.id === id)
+    if (n) n.read = true
+    const unread = _allNotifs.filter(x => !x.read).length
+    updateNotifBadge(unread)
+  } catch {}
+}
+
+async function markAllRead() {
+  try {
+    await apiFetch('/api/notifications/read-all', { method: 'PUT' })
+    _allNotifs.forEach(n => n.read = true)
+    updateNotifBadge(0)
+    renderNotifications()
+    toast('Todo marcado como leído')
+  } catch { toast('Error', 'err') }
+}
+
+function updateNotifBadge(count) {
+  const badge = document.getElementById('nav-notif-badge')
+  if (!badge) return
+  if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.style.display = '' }
+  else badge.style.display = 'none'
+}
+
+function openConvById(id) {
+  const conv = allConvs.find(c => c.id === id)
+  if (conv) openConv(conv.id, conv.name || conv.phone, conv.phone)
+  else loadConversations()
+}
+
+function connectNotifStream() {
+  if (notifSseSource) return
+  notifSseSource = new EventSource(API + '/api/notifications/stream')
+  notifSseSource.onmessage = e => {
+    try {
+      const n = JSON.parse(e.data)
+      _allNotifs.unshift(n)
+      updateNotifBadge(_allNotifs.filter(x => !x.read).length)
+      renderNotifications()
+      // Toast for important types
+      if (['new_contact','handoff','missing_image'].includes(n.type)) {
+        toast(n.title)
+      }
+    } catch {}
+  }
+  notifSseSource.onerror = () => {
+    notifSseSource?.close(); notifSseSource = null
+    setTimeout(connectNotifStream, 30000)
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // ACCESS CONTROL POPUP
 // ═══════════════════════════════════════════════════════════════════
 function openAccessPopup() {
@@ -2554,15 +2783,13 @@ function toast(msg, type = 'ok') {
 // ═══════════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════════
+const DEFAULT_WORKER_URL = 'https://aiworker-3hca.onrender.com'
+
 ;(async () => {
-  const savedUrl = localStorage.getItem('aw_url')
-  if (!savedUrl) {
-    document.getElementById('su-url').value = 'https://aiworker-3hca.onrender.com'
-    document.getElementById('setup-step1').style.display = 'flex'
-    return
-  }
-  API = savedUrl
+  // Always use saved URL or default — skip step1 on first visit
+  API = localStorage.getItem('aw_url') || DEFAULT_WORKER_URL
   KEY = localStorage.getItem('aw_key') || ''
+  if (!localStorage.getItem('aw_url')) localStorage.setItem('aw_url', DEFAULT_WORKER_URL)
 
   // If we have a session token, validate it
   if (sessionToken) {
