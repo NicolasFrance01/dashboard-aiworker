@@ -351,12 +351,12 @@ tr:hover td{background:var(--bg2)}
 </head>
 <body>
 
-<!-- SETUP -->
-<div id="setup">
+<!-- SETUP — Step 1: URL del worker -->
+<div id="setup-step1" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f172a,#1e293b);z-index:9999;align-items:center;justify-content:center;padding:24px">
   <div class="setup-wrap">
-    <div class="setup-logo">🤖</div>
-    <h1>AI Business OS</h1>
-    <p>Conectá tu AIWorker para acceder al panel de gestión completo.</p>
+    <div class="setup-logo">⚙️</div>
+    <h1>Configuración inicial</h1>
+    <p>Ingresá los datos de conexión a tu AIWorker. Solo necesitás hacer esto una vez.</p>
     <div class="sf">
       <label>URL del Worker (Render)</label>
       <input type="url" id="su-url" placeholder="https://aiworker-xxxx.onrender.com"/>
@@ -364,9 +364,34 @@ tr:hover td{background:var(--bg2)}
     </div>
     <div class="sf">
       <label>Clave de acceso (opcional)</label>
-      <input type="password" id="su-key" placeholder="DASHBOARD_SECRET (si está configurado)"/>
+      <input type="password" id="su-key" placeholder="DASHBOARD_SECRET"/>
     </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="saveSetup()">Conectar al sistema →</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="saveSetup()">Guardar y continuar →</button>
+  </div>
+</div>
+
+<!-- SETUP — Step 2: Login -->
+<div id="setup-login" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f172a,#1e293b);z-index:9999;align-items:center;justify-content:center;padding:24px">
+  <div class="setup-wrap" style="max-width:400px">
+    <div id="login-logo-wrap" style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent-dk));display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;overflow:hidden">
+      <span id="login-logo-emoji">🤖</span>
+      <img id="login-logo-img" style="display:none;width:100%;height:100%;object-fit:cover"/>
+    </div>
+    <h1 id="login-biz-name" style="font-size:22px;font-weight:700;margin-bottom:4px">AI Business OS</h1>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:28px">Ingresá con tu usuario y contraseña</p>
+    <div id="login-error" style="display:none;background:var(--danger-lt);border:1px solid #fca5a5;border-radius:var(--r-sm);padding:10px 13px;font-size:13px;color:var(--danger);margin-bottom:14px"></div>
+    <div class="sf">
+      <label>Usuario</label>
+      <input id="login-user" placeholder="admin" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="sf">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px;margin-top:4px" onclick="doLogin()">Ingresar al sistema →</button>
+    <div style="margin-top:16px;text-align:center">
+      <button onclick="showWorkerSetup()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;text-decoration:underline">Cambiar URL del Worker</button>
+    </div>
   </div>
 </div>
 
@@ -375,21 +400,22 @@ tr:hover td{background:var(--bg2)}
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-mark">🤖</div>
-      <div><div class="logo-text">AI Business OS</div><div class="logo-sub">by AIWorker</div></div>
+    <div class="sidebar-logo" id="sidebar-logo">
+      <div class="logo-mark" id="sidebar-logo-mark" style="overflow:hidden">🤖</div>
+      <div><div class="logo-text" id="sidebar-biz-name">AI Business OS</div><div class="logo-sub">by AIWorker</div></div>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">
         <div class="nav-label">Principal</div>
-        <button class="nav-item active" onclick="nav('panel',this)"><span class="nav-icon">📊</span>Panel</button>
-        <button class="nav-item" onclick="nav('negocio',this)"><span class="nav-icon">🏢</span>Mi Negocio</button>
-        <button class="nav-item" onclick="nav('agentes',this)"><span class="nav-icon">🤖</span>Agentes IA<span class="nav-badge">6</span></button>
-        <button class="nav-item" onclick="nav('inbox',this)"><span class="nav-icon">💬</span>Conversaciones</button>
+        <button class="nav-item active" id="nav-panel" onclick="nav('panel',this)"><span class="nav-icon">📊</span>Panel</button>
+        <button class="nav-item" id="nav-negocio" onclick="nav('negocio',this)"><span class="nav-icon">🏢</span>Mi Negocio</button>
+        <button class="nav-item" id="nav-agentes" onclick="nav('agentes',this)"><span class="nav-icon">🤖</span>Agentes IA<span class="nav-badge">5</span></button>
+        <button class="nav-item" id="nav-inbox" onclick="nav('inbox',this)"><span class="nav-icon">💬</span>Conversaciones</button>
       </div>
       <div class="nav-section">
         <div class="nav-label">Sistema</div>
-        <button class="nav-item" onclick="nav('config',this)"><span class="nav-icon">⚙️</span>Configuración</button>
+        <button class="nav-item" id="nav-config" onclick="nav('config',this)"><span class="nav-icon">⚙️</span>Configuración</button>
+        <button class="nav-item" id="nav-usuarios" onclick="nav('usuarios',this)" style="display:none"><span class="nav-icon">👥</span>Usuarios</button>
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -400,7 +426,11 @@ tr:hover td{background:var(--bg2)}
           <span id="wa-status-text" style="margin-left:auto;font-size:11px">—</span>
         </div>
       </div>
-      <div class="pro-badge"><span>⚡</span><span>Plan Pro activo</span><span style="margin-left:auto;font-size:10px;opacity:.6">Beta</span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r-sm);background:rgba(255,255,255,.05);margin-bottom:8px" id="user-info-bar">
+        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dk));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0" id="sidebar-user-avatar">?</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="sidebar-user-name">—</div><div style="font-size:10px;color:rgba(255,255,255,.35)" id="sidebar-user-role">—</div></div>
+        <button onclick="logout()" title="Cerrar sesión" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:16px;padding:2px" title="Salir">⎋</button>
+      </div>
     </div>
   </aside>
 
@@ -488,7 +518,36 @@ tr:hover td{background:var(--bg2)}
       </div>
 
       <div class="biz-panel active" id="biz-general">
-        <!-- AI Personality settings (moved from Configuración) -->
+        <!-- Business identity -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr"><h3>🏢 Identidad del Negocio</h3><span id="biz-id-save-ok" style="font-size:12px;color:var(--accent);display:none">✓ Guardado</span></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:start">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Logo</div>
+                <div id="biz-logo-preview" style="width:100px;height:100px;border-radius:var(--r);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--bg2);overflow:hidden;cursor:pointer;position:relative" onclick="document.getElementById('biz-logo-input').click()">
+                  <span id="biz-logo-emoji">🏢</span>
+                  <img id="biz-logo-img" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;inset:0"/>
+                  <input type="file" id="biz-logo-input" accept="image/*" style="display:none" onchange="handleBizLogo(event)"/>
+                </div>
+                <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">Clic para cambiar</div>
+                <button id="biz-logo-remove" onclick="removeBizLogo()" class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;font-size:10px;display:none">✕ Quitar logo</button>
+              </div>
+              <div>
+                <div class="fg" style="margin-bottom:12px">
+                  <label>Nombre del negocio</label>
+                  <input id="cfg-biz-name" placeholder="Ej: EDIFICA Obras y Servicios"/>
+                  <div class="hint">Se muestra en la barra lateral y en el login</div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:14px">
+              <button class="btn btn-primary" onclick="saveSettings('identity')">💾 Guardar identidad</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Personality settings -->
         <div class="card" style="margin-bottom:16px">
           <div class="card-hdr"><h3>🧠 Personalidad del Agente IA</h3><span id="biz-save-ok" style="font-size:12px;color:var(--accent);display:none">✓ Guardado</span></div>
           <div class="card-body">
@@ -686,7 +745,10 @@ tr:hover td{background:var(--bg2)}
       <div class="inbox-wrap">
         <!-- Col 1: lista -->
         <div class="inbox-col" style="background:var(--bg)">
-          <div style="padding:12px;border-bottom:1px solid var(--border)"><input placeholder="Buscar contacto…" style="width:100%;border:1px solid var(--border);border-radius:var(--r-xs);padding:7px 10px;font-size:12px;outline:none;" id="conv-search" oninput="filterConvs(this.value)"/></div>
+          <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center">
+            <input placeholder="Buscar contacto…" style="flex:1;border:1px solid var(--border);border-radius:var(--r-xs);padding:7px 10px;font-size:12px;outline:none;" id="conv-search" oninput="filterConvs(this.value)"/>
+            <button onclick="openAccessPopup()" class="btn-icon" title="Control de acceso" style="flex-shrink:0">⚙</button>
+          </div>
           <div class="inbox-filters">
             <button class="filter-chip active" onclick="setFilter('all',this)">Todos</button>
             <button class="filter-chip" onclick="setFilter('today',this)">Hoy</button>
@@ -711,6 +773,32 @@ tr:hover td{background:var(--bg2)}
       </div>
     </div>
 
+    <!-- ═══ USUARIOS ═══ -->
+    <div class="view view-pad" id="view-usuarios">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div><h2 style="font-size:16px;font-weight:700">Usuarios del sistema</h2><p style="font-size:13px;color:var(--text2);margin-top:2px">Gestioná el acceso al dashboard por usuario y rol</p></div>
+        <button class="btn btn-primary" onclick="openUserModal()">+ Nuevo usuario</button>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-hdr"><h3>👥 Lista de usuarios</h3><button class="btn btn-ghost btn-sm" onclick="loadUsers()">↺ Actualizar</button></div>
+        <div class="table-wrap">
+          <table id="users-table">
+            <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Creado</th><th></th></tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h3>📋 Registro de actividad</h3><button class="btn btn-ghost btn-sm" onclick="loadActivityLog()">↺ Actualizar</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th></tr></thead>
+            <tbody id="activity-tbody"><tr><td colspan="3" style="text-align:center;color:var(--text2);padding:24px">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══ CONFIGURACIÓN ═══ -->
     <div class="view view-pad" id="view-config">
       <div class="config-grid" style="margin-bottom:16px">
@@ -728,60 +816,6 @@ tr:hover td{background:var(--bg2)}
             <div class="info-row"><span class="label">Mensajes procesados</span><span class="val" id="cfg-msgs">—</span></div>
             <div class="info-row"><span class="label">Reinicios</span><span class="val" id="cfg-restarts">—</span></div>
             <div class="info-row"><span class="label">URL del worker</span><span class="val" id="cfg-url" style="font-size:11px;font-family:monospace">—</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Control de acceso -->
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-hdr"><h3>🔐 Control de acceso</h3><span id="save-ok" style="font-size:12px;color:var(--accent);display:none">✓ Guardado</span></div>
-        <div class="card-body">
-
-          <!-- WHITELIST -->
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📋 Lista blanca</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);margin-bottom:10px">
-            <div>
-              <div style="font-size:13px;font-weight:500">Responder a todos los contactos</div>
-              <div style="font-size:11px;color:var(--text2);margin-top:2px" id="wl-mode-hint">El bot acepta mensajes de cualquier número</div>
-            </div>
-            <div class="toggle on" id="wl-all-toggle" onclick="toggleWhitelistAll()"></div>
-          </div>
-          <div id="wl-specific-area" style="display:none;margin-bottom:4px">
-            <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5">Solo estos números pueden chatear. Si la lista está vacía, el bot no responde a nadie.<br/><code style="font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:1px 5px;border-radius:3px">549 + número sin 0 ni 15</code></div>
-            <div id="whitelist-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
-            <div style="display:flex;gap:8px">
-              <input id="whitelist-input" placeholder="Ej: 5493512011783" style="font-family:'JetBrains Mono',monospace;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;outline:none;width:220px;transition:border-color .2s"
-                onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addWhitelistPhone()}"
-                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-              <button class="btn btn-secondary btn-sm" onclick="addWhitelistPhone()">+ Agregar</button>
-            </div>
-          </div>
-
-          <div style="height:1px;background:var(--border);margin:16px 0"></div>
-
-          <!-- BLACKLIST -->
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">🚫 Lista negra</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);margin-bottom:10px">
-            <div>
-              <div style="font-size:13px;font-weight:500">Bloquear a todos los contactos</div>
-              <div style="font-size:11px;color:var(--text2);margin-top:2px" id="bl-mode-hint">El bot responde con normalidad</div>
-            </div>
-            <div class="toggle" id="bl-all-toggle" onclick="toggleBlacklistAll()"></div>
-          </div>
-          <div id="bl-specific-area" style="display:none;margin-bottom:4px">
-            <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5">El bot ignora mensajes de estos números específicos.<br/><code style="font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:1px 5px;border-radius:3px">549 + número sin 0 ni 15</code></div>
-            <div id="blacklist-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
-            <div style="display:flex;gap:8px">
-              <input id="blacklist-input" placeholder="Ej: 5493512011783" style="font-family:'JetBrains Mono',monospace;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;outline:none;width:220px;transition:border-color .2s"
-                onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addBlacklistPhone()}"
-                onfocus="this.style.borderColor='var(--danger)'" onblur="this.style.borderColor='var(--border)'"/>
-              <button class="btn btn-secondary btn-sm" onclick="addBlacklistPhone()">+ Agregar</button>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:8px;margin-top:18px">
-            <button class="btn btn-primary" onclick="saveSettings('cfg')">💾 Guardar control de acceso</button>
-            <button class="btn btn-ghost" onclick="loadSettings()">↺ Recargar</button>
           </div>
         </div>
       </div>
@@ -918,6 +952,94 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- ═══ ACCESS CONTROL POPUP ═══ -->
+<div id="access-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeAccessPopup()">
+  <div style="background:var(--bg);border-radius:var(--r);width:100%;max-width:520px;box-shadow:var(--sh-lg);max-height:85vh;overflow-y:auto">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center">
+      <h3 style="flex:1;font-size:15px;font-weight:600">🔐 Control de acceso</h3>
+      <span id="save-ok" style="font-size:12px;color:var(--accent);display:none;margin-right:12px">✓ Guardado</span>
+      <button class="btn-icon" onclick="closeAccessPopup()">✕</button>
+    </div>
+    <div style="padding:20px">
+      <!-- WHITELIST -->
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📋 Lista blanca</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);margin-bottom:10px">
+        <div>
+          <div style="font-size:13px;font-weight:500">Responder a todos los contactos</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px" id="wl-mode-hint">El bot acepta mensajes de cualquier número</div>
+        </div>
+        <div class="toggle on" id="wl-all-toggle" onclick="toggleWhitelistAll()"></div>
+      </div>
+      <div id="wl-specific-area" style="display:none;margin-bottom:4px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5">Solo estos números pueden chatear. Si la lista está vacía, el bot no responde a nadie.<br/><code style="font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:1px 5px;border-radius:3px">549 + número sin 0 ni 15</code></div>
+        <div id="whitelist-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
+        <div style="display:flex;gap:8px">
+          <input id="whitelist-input" placeholder="Ej: 5493512011783" style="font-family:'JetBrains Mono',monospace;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;outline:none;width:220px;transition:border-color .2s"
+            onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addWhitelistPhone()}"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+          <button class="btn btn-secondary btn-sm" onclick="addWhitelistPhone()">+ Agregar</button>
+        </div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
+      <!-- BLACKLIST -->
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">🚫 Lista negra</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);margin-bottom:10px">
+        <div>
+          <div style="font-size:13px;font-weight:500">Bloquear a todos los contactos</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px" id="bl-mode-hint">El bot responde con normalidad</div>
+        </div>
+        <div class="toggle" id="bl-all-toggle" onclick="toggleBlacklistAll()"></div>
+      </div>
+      <div id="bl-specific-area" style="display:none;margin-bottom:4px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5">El bot ignora mensajes de estos números específicos.<br/><code style="font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:1px 5px;border-radius:3px">549 + número sin 0 ni 15</code></div>
+        <div id="blacklist-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
+        <div style="display:flex;gap:8px">
+          <input id="blacklist-input" placeholder="Ej: 5493512011783" style="font-family:'JetBrains Mono',monospace;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;outline:none;width:220px;transition:border-color .2s"
+            onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addBlacklistPhone()}"
+            onfocus="this.style.borderColor='var(--danger)'" onblur="this.style.borderColor='var(--border)'"/>
+          <button class="btn btn-secondary btn-sm" onclick="addBlacklistPhone()">+ Agregar</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn btn-primary" onclick="saveSettings('cfg')">💾 Guardar</button>
+        <button class="btn btn-ghost" onclick="closeAccessPopup()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ USER MODAL ═══ -->
+<div id="user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeUserModal()">
+  <div style="background:var(--bg);border-radius:var(--r);width:100%;max-width:440px;box-shadow:var(--sh-lg)">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center">
+      <h3 style="flex:1;font-size:15px;font-weight:600" id="user-modal-title">Nuevo usuario</h3>
+      <button class="btn-icon" onclick="closeUserModal()">✕</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" id="um-id"/>
+      <div class="fg"><label>Usuario *</label><input id="um-username" placeholder="ej: juan.perez"/></div>
+      <div class="fg"><label>Nombre completo</label><input id="um-name" placeholder="Juan Pérez"/></div>
+      <div class="fg"><label>Contraseña <span id="um-pass-hint" style="font-weight:400;color:var(--text3)">(requerida para nuevo usuario)</span></label><input type="password" id="um-password" placeholder="••••••••"/></div>
+      <div class="fg">
+        <label>Rol</label>
+        <select id="um-role" style="border:1.5px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;outline:none;background:var(--bg);color:var(--text)">
+          <option value="usuario">Usuario — acceso básico</option>
+          <option value="administracion">Administración — gestión completa</option>
+          <option value="superadmin">Superadmin — todo el sistema</option>
+        </select>
+      </div>
+      <div id="um-active-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2)">
+        <span style="font-size:13px;font-weight:500">Cuenta activa</span>
+        <div class="toggle on" id="um-active-toggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:4px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveUser()">Guardar usuario</button>
+        <button class="btn btn-ghost" onclick="closeUserModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -925,15 +1047,24 @@ tr:hover td{background:var(--bg2)}
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════
 let API = '', KEY = ''
+let sessionToken = localStorage.getItem('aw_session') || ''
+let currentUser = null
 let sseSource = null
 let activeConvId = null
 let convFilter = 'all'
 let allConvs = []
 let customAgents = []
 let naKeywords = []
+let _agentActive = {}
+let _bizLogo = ''
+let _bizName = ''
+let _usersCache = []
 
 function hdrs(extra = {}) {
-  return { 'Content-Type': 'application/json', ...(KEY ? { 'X-Dashboard-Key': KEY } : {}), ...extra }
+  const h = { 'Content-Type': 'application/json', ...extra }
+  if (KEY) h['X-Dashboard-Key'] = KEY
+  if (sessionToken) h['X-Session-Token'] = sessionToken
+  return h
 }
 async function apiFetch(path, opts = {}) {
   const r = await fetch(API + path, { headers: hdrs(), ...opts })
@@ -941,8 +1072,13 @@ async function apiFetch(path, opts = {}) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SETUP
+// SETUP & AUTH
 // ═══════════════════════════════════════════════════════════════════
+function showWorkerSetup() {
+  document.getElementById('setup-step1').style.display = 'flex'
+  document.getElementById('setup-login').style.display = 'none'
+}
+
 function saveSetup() {
   const url = document.getElementById('su-url').value.trim().replace(/\/$/, '')
   const key = document.getElementById('su-key').value.trim()
@@ -950,18 +1086,82 @@ function saveSetup() {
   localStorage.setItem('aw_url', url)
   localStorage.setItem('aw_key', key)
   API = url; KEY = key
-  boot()
+  document.getElementById('setup-step1').style.display = 'none'
+  showLoginScreen()
 }
-function clearSetup() {
-  if (!confirm('¿Desconectar?')) return
-  localStorage.removeItem('aw_url'); localStorage.removeItem('aw_key')
+
+async function showLoginScreen() {
+  // Try to load business branding for login screen
+  try {
+    const d = await fetch(API + '/api/settings').then(r => r.json()).catch(() => ({}))
+    const s = d.settings || {}
+    if (s.business_name) document.getElementById('login-biz-name').textContent = s.business_name
+    if (s.business_logo) {
+      document.getElementById('login-logo-emoji').style.display = 'none'
+      const img = document.getElementById('login-logo-img')
+      img.src = s.business_logo
+      img.style.display = 'block'
+    }
+  } catch {}
+  document.getElementById('setup-login').style.display = 'flex'
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim()
+  const password = document.getElementById('login-pass').value
+  const errEl = document.getElementById('login-error')
+  errEl.style.display = 'none'
+  if (!username || !password) { errEl.textContent = 'Ingresá usuario y contraseña'; errEl.style.display = 'block'; return }
+  try {
+    const r = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(KEY ? { 'X-Dashboard-Key': KEY } : {}) },
+      body: JSON.stringify({ username, password })
+    })
+    const d = await r.json()
+    if (d.ok && d.token) {
+      sessionToken = d.token
+      currentUser = d.user
+      localStorage.setItem('aw_session', sessionToken)
+      document.getElementById('setup-login').style.display = 'none'
+      bootApp()
+    } else {
+      errEl.textContent = d.error || 'Usuario o contraseña incorrectos'
+      errEl.style.display = 'block'
+    }
+  } catch {
+    errEl.textContent = 'No se pudo conectar con el servidor'
+    errEl.style.display = 'block'
+  }
+}
+
+function logout() {
+  if (!confirm('¿Cerrar sesión?')) return
+  sessionToken = ''
+  currentUser = null
+  localStorage.removeItem('aw_session')
   location.reload()
 }
 
-function boot() {
-  document.getElementById('setup').style.display = 'none'
+function clearSetup() {
+  if (!confirm('¿Desconectar y borrar configuración?')) return
+  localStorage.removeItem('aw_url')
+  localStorage.removeItem('aw_key')
+  localStorage.removeItem('aw_session')
+  location.reload()
+}
+
+function bootApp() {
   document.getElementById('app').style.display = 'block'
   document.getElementById('cfg-url').textContent = API.replace('https://', '')
+  // Update sidebar user info
+  if (currentUser) {
+    const roleLabels = { superadmin: 'Superadmin', administracion: 'Administración', usuario: 'Usuario' }
+    document.getElementById('sidebar-user-name').textContent = currentUser.name || currentUser.username
+    document.getElementById('sidebar-user-role').textContent = roleLabels[currentUser.role] || currentUser.role
+    document.getElementById('sidebar-user-avatar').textContent = (currentUser.name || currentUser.username || '?')[0].toUpperCase()
+    applyRoleNav(currentUser.role)
+  }
   initHours()
   initCalendar()
   loadProducts()
@@ -970,10 +1170,36 @@ function boot() {
   init()
 }
 
+function applyRoleNav(role) {
+  // superadmin: all; administracion: no usuarios; usuario: only negocio+inbox
+  const allNavs = { panel: true, negocio: true, agentes: true, inbox: true, config: true, usuarios: false }
+  if (role === 'superadmin') {
+    allNavs.usuarios = true
+  } else if (role === 'administracion') {
+    allNavs.usuarios = false
+    allNavs.config = true
+  } else {
+    // usuario
+    allNavs.panel = false
+    allNavs.agentes = false
+    allNavs.config = false
+    allNavs.usuarios = false
+  }
+  for (const [id, show] of Object.entries(allNavs)) {
+    const el = document.getElementById('nav-' + id)
+    if (el) el.style.display = show ? '' : 'none'
+  }
+}
+
+function boot() {
+  // Legacy compatibility — called from old boot path when no session needed
+  bootApp()
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════
-const titles = { panel:'Panel', negocio:'Mi Negocio', agentes:'Agentes IA', inbox:'Conversaciones', config:'Configuración' }
+const titles = { panel:'Panel', negocio:'Mi Negocio', agentes:'Agentes IA', inbox:'Conversaciones', config:'Configuración', usuarios:'Usuarios' }
 function nav(id, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'))
@@ -984,6 +1210,7 @@ function nav(id, btn) {
   if (id === 'negocio') loadSettings()
   if (id === 'agentes') { loadSettings(); initAgents() }
   if (id === 'config') { loadStatus(); loadSettings() }
+  if (id === 'usuarios') { loadUsers(); loadActivityLog() }
 }
 
 function bizTab(id, btn) {
@@ -1291,7 +1518,8 @@ function initAgents() {
   const grid = document.getElementById('native-agents')
   grid.innerHTML = NATIVE_AGENTS.map((a) => {
     const hasCustom = !!agentPrompts[a.type]
-    return `<div class="agent-card active-card" style="border-left:4px solid var(--accent)">
+    const isActive = _agentActive[a.type] !== false  // default true
+    return `<div class="agent-card ${isActive ? 'active-card' : ''}" style="${isActive ? 'border-left:4px solid var(--accent)' : 'opacity:.6'}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
         <span class="agent-emoji" style="font-size:24px">${a.emoji}</span>
         <span class="badge ${a.badge.cls}">${a.badge.label}</span>
@@ -1301,11 +1529,25 @@ function initAgents() {
       <div style="font-size:10px;color:var(--text3);margin-bottom:10px">Activa con: ${a.trigger}</div>
       <div class="keyword-chips" style="margin-bottom:12px">${a.keywords.map(k => `<span class="chip" style="font-size:10px">${esc(k)}</span>`).join('')}</div>
       <div class="agent-toggle">
-        <span class="badge badge-green" style="font-size:10px">${hasCustom ? '✏️ Prompt personalizado' : '✓ Activo'}</span>
         <button class="btn btn-ghost btn-sm" onclick="openAgentDrawer('${a.type}')">Editar</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text2)">${isActive ? 'Activo' : 'Inactivo'}</span>
+          <div class="toggle ${isActive ? 'on' : ''}" onclick="toggleAgentActive('${a.type}',this)" title="Activar/desactivar agente"></div>
+        </div>
       </div>
     </div>`
   }).join('')
+}
+
+async function toggleAgentActive(type, toggleEl) {
+  toggleEl.classList.toggle('on')
+  const isNowActive = toggleEl.classList.contains('on')
+  _agentActive[type] = isNowActive
+  try {
+    await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify({ agent_active: _agentActive }) })
+    toast(`Agente ${isNowActive ? 'activado' : 'desactivado'}`)
+    initAgents()
+  } catch { toast('Error al guardar', 'err') }
 }
 
 function openAgentDrawer(type = null) {
@@ -1495,9 +1737,34 @@ async function loadSettings() {
     // Agent prompts
     agentPrompts = (s.agent_prompts && typeof s.agent_prompts === 'object') ? s.agent_prompts : {}
 
+    // Agent active state
+    _agentActive = (s.agent_active && typeof s.agent_active === 'object') ? s.agent_active : {}
+
     // FAQs
     _faqs = Array.isArray(s.faqs) ? s.faqs : []
     renderFaqs()
+
+    // Business identity
+    _bizName = s.business_name || ''
+    _bizLogo = s.business_logo || ''
+    const bizNameInput = document.getElementById('cfg-biz-name')
+    if (bizNameInput) bizNameInput.value = _bizName
+
+    // Update sidebar branding
+    if (_bizName) document.getElementById('sidebar-biz-name').textContent = _bizName
+    const logoMark = document.getElementById('sidebar-logo-mark')
+    const bizLogoImg = document.getElementById('biz-logo-img')
+    const bizLogoEmoji = document.getElementById('biz-logo-emoji')
+    if (_bizLogo && logoMark) {
+      logoMark.innerHTML = `<img src="${_bizLogo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px"/>`
+    }
+    if (bizLogoImg && _bizLogo) {
+      bizLogoImg.src = _bizLogo
+      bizLogoImg.style.display = 'block'
+      if (bizLogoEmoji) bizLogoEmoji.style.display = 'none'
+      const removeBtn = document.getElementById('biz-logo-remove')
+      if (removeBtn) removeBtn.style.display = ''
+    }
 
   } catch { toast('Error al cargar configuración', 'err') }
 }
@@ -1505,7 +1772,12 @@ async function loadSettings() {
 async function saveSettings(source = 'biz') {
   try {
     let body = {}
-    if (source === 'biz') {
+    if (source === 'identity') {
+      const name = document.getElementById('cfg-biz-name')?.value?.trim() || undefined
+      body = { business_name: name, business_logo: _bizLogo || null }
+      // Update sidebar immediately
+      if (name) { document.getElementById('sidebar-biz-name').textContent = name; _bizName = name }
+    } else if (source === 'biz') {
       body = {
         personality_prompt:   document.getElementById('cfg-personality')?.value   || undefined,
         business_description: document.getElementById('cfg-business')?.value      || undefined,
@@ -1525,7 +1797,7 @@ async function saveSettings(source = 'biz') {
     }
     const d = await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify(body) })
     if (d.ok) {
-      const okId = source === 'biz' ? 'biz-save-ok' : 'save-ok'
+      const okId = source === 'biz' ? 'biz-save-ok' : source === 'identity' ? 'biz-id-save-ok' : 'save-ok'
       const ok = document.getElementById(okId)
       if (ok) { ok.style.display = 'inline'; setTimeout(() => ok.style.display = 'none', 3000) }
       toast('Guardado correctamente')
@@ -2070,6 +2342,173 @@ function initCalendar() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// ACCESS CONTROL POPUP
+// ═══════════════════════════════════════════════════════════════════
+function openAccessPopup() {
+  renderWhitelistUI()
+  renderBlacklistUI()
+  const el = document.getElementById('access-popup')
+  el.style.display = 'flex'
+}
+function closeAccessPopup() {
+  document.getElementById('access-popup').style.display = 'none'
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BUSINESS LOGO
+// ═══════════════════════════════════════════════════════════════════
+function handleBizLogo(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  if (file.size > 2 * 1024 * 1024) { toast('El logo no puede superar 2MB', 'err'); return }
+  const reader = new FileReader()
+  reader.onload = ev => {
+    _bizLogo = ev.target.result
+    const img = document.getElementById('biz-logo-img')
+    const emoji = document.getElementById('biz-logo-emoji')
+    const mark = document.getElementById('sidebar-logo-mark')
+    if (img) { img.src = _bizLogo; img.style.display = 'block' }
+    if (emoji) emoji.style.display = 'none'
+    if (mark) mark.innerHTML = `<img src="${_bizLogo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px"/>`
+    const removeBtn = document.getElementById('biz-logo-remove')
+    if (removeBtn) removeBtn.style.display = ''
+  }
+  reader.readAsDataURL(file)
+}
+
+function removeBizLogo() {
+  _bizLogo = ''
+  const img = document.getElementById('biz-logo-img')
+  const emoji = document.getElementById('biz-logo-emoji')
+  const mark = document.getElementById('sidebar-logo-mark')
+  if (img) { img.src = ''; img.style.display = 'none' }
+  if (emoji) emoji.style.display = ''
+  if (mark) { mark.innerHTML = '🤖' }
+  const removeBtn = document.getElementById('biz-logo-remove')
+  if (removeBtn) removeBtn.style.display = 'none'
+  const input = document.getElementById('biz-logo-input')
+  if (input) input.value = ''
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// USUARIOS
+// ═══════════════════════════════════════════════════════════════════
+const ROLE_LABELS = { superadmin: 'Superadmin', administracion: 'Administración', usuario: 'Usuario' }
+const ROLE_BADGE = { superadmin: 'badge-red', administracion: 'badge-blue', usuario: 'badge-gray' }
+
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody')
+  if (!tbody) return
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">Cargando…</td></tr>'
+  try {
+    const d = await apiFetch('/api/users')
+    _usersCache = d.users || []
+    if (!_usersCache.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">No hay usuarios</td></tr>'; return }
+    tbody.innerHTML = _usersCache.map(u => `
+      <tr>
+        <td><span style="font-family:'JetBrains Mono',monospace;font-size:12px">${esc(u.username)}</span></td>
+        <td>${esc(u.name || '—')}</td>
+        <td><span class="badge ${ROLE_BADGE[u.role] || 'badge-gray'}">${ROLE_LABELS[u.role] || u.role}</span></td>
+        <td><span class="badge ${u.active ? 'badge-green' : 'badge-gray'}">${u.active ? '✓ Activo' : '✗ Inactivo'}</span></td>
+        <td style="font-size:12px;color:var(--text2)">${fmtDate(u.created_at)}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="openUserModalById(${u.id})">Editar</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteUser(${u.id},'${esc(u.username)}')">✕</button>
+          </div>
+        </td>
+      </tr>`).join('')
+  } catch { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:24px">Error al cargar</td></tr>' }
+}
+
+async function loadActivityLog() {
+  const tbody = document.getElementById('activity-tbody')
+  if (!tbody) return
+  try {
+    const d = await apiFetch('/api/activity')
+    const logs = d.logs || []
+    if (!logs.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:24px">Sin actividad registrada</td></tr>'; return }
+    tbody.innerHTML = logs.slice(0, 50).map(l => `
+      <tr>
+        <td style="font-size:11px;color:var(--text2);white-space:nowrap">${fmtDateTime(l.created_at)}</td>
+        <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">${esc(l.username || '—')}</span></td>
+        <td style="font-size:13px">${esc(l.action)}</td>
+      </tr>`).join('')
+  } catch {}
+}
+
+function openUserModalById(id) {
+  const u = _usersCache.find(x => x.id === id)
+  if (u) openUserModal(u)
+}
+
+function openUserModal(u = null) {
+  const modal = document.getElementById('user-modal')
+  document.getElementById('um-id').value = ''
+  document.getElementById('um-username').value = ''
+  document.getElementById('um-name').value = ''
+  document.getElementById('um-password').value = ''
+  document.getElementById('um-role').value = 'usuario'
+  document.getElementById('um-active-toggle').classList.add('on')
+  document.getElementById('um-active-row').style.display = 'none'
+  document.getElementById('um-pass-hint').textContent = '(requerida para nuevo usuario)'
+  document.getElementById('user-modal-title').textContent = 'Nuevo usuario'
+
+  if (u && typeof u === 'object') {
+    document.getElementById('um-id').value = u.id
+    document.getElementById('um-username').value = u.username || ''
+    document.getElementById('um-name').value = u.name || ''
+    document.getElementById('um-role').value = u.role || 'usuario'
+    if (!u.active) document.getElementById('um-active-toggle').classList.remove('on')
+    document.getElementById('um-active-row').style.display = ''
+    document.getElementById('um-pass-hint').textContent = '(dejá vacía para no cambiarla)'
+    document.getElementById('user-modal-title').textContent = `Editar — ${u.username}`
+  }
+  modal.style.display = 'flex'
+}
+
+function closeUserModal() {
+  document.getElementById('user-modal').style.display = 'none'
+}
+
+async function saveUser() {
+  const id = document.getElementById('um-id').value
+  const username = document.getElementById('um-username').value.trim()
+  const name = document.getElementById('um-name').value.trim()
+  const password = document.getElementById('um-password').value
+  const role = document.getElementById('um-role').value
+  const active = document.getElementById('um-active-toggle').classList.contains('on')
+
+  if (!username) { toast('Ingresá un nombre de usuario', 'err'); return }
+  if (!id && !password) { toast('La contraseña es requerida para nuevos usuarios', 'err'); return }
+
+  try {
+    let d
+    if (id) {
+      const body = { name, role, active }
+      if (password) body.password = password
+      d = await apiFetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+    } else {
+      d = await apiFetch('/api/users', { method: 'POST', body: JSON.stringify({ username, name, password, role }) })
+    }
+    if (d.ok || d.user) {
+      toast(id ? 'Usuario actualizado' : 'Usuario creado')
+      closeUserModal()
+      loadUsers()
+    } else toast(d.error || 'Error al guardar', 'err')
+  } catch { toast('Error de conexión', 'err') }
+}
+
+async function deleteUser(id, username) {
+  if (!confirm(`¿Eliminar usuario "${username}"? Esta acción no se puede deshacer.`)) return
+  try {
+    await apiFetch(`/api/users/${id}`, { method: 'DELETE' })
+    toast('Usuario eliminado')
+    loadUsers()
+  } catch { toast('Error al eliminar', 'err') }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════
 function fmtStatus(s) {
@@ -2115,14 +2554,32 @@ function toast(msg, type = 'ok') {
 // ═══════════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════════
-const savedUrl = localStorage.getItem('aw_url')
-if (savedUrl) {
+;(async () => {
+  const savedUrl = localStorage.getItem('aw_url')
+  if (!savedUrl) {
+    document.getElementById('su-url').value = 'https://aiworker-3hca.onrender.com'
+    document.getElementById('setup-step1').style.display = 'flex'
+    return
+  }
   API = savedUrl
   KEY = localStorage.getItem('aw_key') || ''
-  boot()
-} else {
-  document.getElementById('su-url').value = 'https://aiworker-3hca.onrender.com'
-}
+
+  // If we have a session token, validate it
+  if (sessionToken) {
+    try {
+      const d = await fetch(API + '/api/users/me', { headers: { 'X-Session-Token': sessionToken } }).then(r => r.json())
+      if (d.user) {
+        currentUser = d.user
+        bootApp()
+        return
+      }
+    } catch {}
+    // Token invalid — clear and show login
+    sessionToken = ''
+    localStorage.removeItem('aw_session')
+  }
+  showLoginScreen()
+})()
 
 // Auto-refresh stats cada 60s
 setInterval(() => {
