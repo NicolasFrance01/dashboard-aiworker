@@ -178,9 +178,15 @@ tr:hover td{background:var(--bg2)}
 .bubble-wrap.client .bubble{background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border-bottom-right-radius:4px}
 .bubble-meta{font-size:10px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:4px}
 .bubble-wrap.client .bubble-meta{justify-content:flex-end}
-.audit-tag{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:600}
+.audit-tag{font-size:9px;padding:1px 6px;border-radius:4px;font-weight:600;letter-spacing:.2px}
 .audit-tag.bot{background:var(--accent-lt);color:var(--accent-dk)}
 .audit-tag.human{background:var(--info-lt);color:#1d4ed8}
+.audit-tag.at-generalista{background:#f1f5f9;color:#475569}
+.audit-tag.at-servicios{background:#dbeafe;color:#1d4ed8}
+.audit-tag.at-productos{background:#f3e8ff;color:#7c3aed}
+.audit-tag.at-cotizacion{background:var(--warn-lt);color:#92400e}
+.audit-tag.at-redireccion{background:var(--danger-lt);color:#b91c1c}
+.audit-tag.at-cliente{background:#f0fdf4;color:#166534}
 .chat-input-area{padding:12px 16px;border-top:1px solid var(--border);background:var(--bg)}
 .chat-input-row{display:flex;gap:8px;align-items:flex-end}
 .chat-input-row textarea{flex:1;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;font-size:13px;resize:none;outline:none;min-height:38px;max-height:100px;transition:border-color .2s}
@@ -378,7 +384,7 @@ tr:hover td{background:var(--bg2)}
         <div class="nav-label">Principal</div>
         <button class="nav-item active" onclick="nav('panel',this)"><span class="nav-icon">📊</span>Panel</button>
         <button class="nav-item" onclick="nav('negocio',this)"><span class="nav-icon">🏢</span>Mi Negocio</button>
-        <button class="nav-item" onclick="nav('agentes',this)"><span class="nav-icon">🤖</span>Agentes IA<span class="nav-badge">5</span></button>
+        <button class="nav-item" onclick="nav('agentes',this)"><span class="nav-icon">🤖</span>Agentes IA<span class="nav-badge">6</span></button>
         <button class="nav-item" onclick="nav('inbox',this)"><span class="nav-icon">💬</span>Conversaciones</button>
       </div>
       <div class="nav-section">
@@ -1100,17 +1106,20 @@ async function openConv(id, name, phone) {
     const msgs = d.messages || []
     const area2 = document.getElementById('msgs-area')
     if (!msgs.length) { area2.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">Sin mensajes</div>'; return }
-    area2.innerHTML = msgs.map(m => `
-      <div class="bubble-wrap ${m.sender}">
-        <div class="bubble-av">${m.sender === 'ai' ? '🤖' : '👤'}</div>
+    area2.innerHTML = msgs.map(m => {
+      const isAI = m.sender === 'ai'
+      const agentMeta = isAI ? agentLabel(m.agent_type) : { icon: '👤', label: 'Cliente', cls: 'at-cliente' }
+      return `<div class="bubble-wrap ${m.sender}">
+        <div class="bubble-av" title="${agentMeta.label}">${agentMeta.icon}</div>
         <div>
           <div class="bubble">${esc(m.content || '')}</div>
           <div class="bubble-meta">
             ${fmtDateTime(m.created_at)}
-            <span class="audit-tag ${m.sender === 'ai' ? 'bot' : 'human'}">${m.sender === 'ai' ? 'Bot' : 'Cliente'}</span>
+            <span class="audit-tag ${agentMeta.cls}">${agentMeta.label}</span>
           </div>
         </div>
-      </div>`).join('')
+      </div>`
+    }).join('')
     setTimeout(() => { const a = document.getElementById('msgs-area'); if (a) a.scrollTop = a.scrollHeight }, 50)
   } catch {}
 }
@@ -1679,6 +1688,17 @@ function fmtDateTime(ts) {
 }
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function agentLabel(type) {
+  const map = {
+    generalista:  { icon: '🤖', label: 'Ediluz · General',    cls: 'at-generalista' },
+    servicios:    { icon: '🔨', label: 'Agente Servicios',     cls: 'at-servicios'   },
+    productos:    { icon: '🏷️', label: 'Agente Productos',    cls: 'at-productos'   },
+    cotizacion:   { icon: '💰', label: 'Agente Cotización',    cls: 'at-cotizacion'  },
+    redireccion:  { icon: '📱', label: 'Agente Redirección',   cls: 'at-redireccion' },
+  }
+  return map[type] || { icon: '🤖', label: 'IA', cls: 'at-generalista' }
 }
 function toast(msg, type = 'ok') {
   const el = document.createElement('div')
