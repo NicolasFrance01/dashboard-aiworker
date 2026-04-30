@@ -691,6 +691,25 @@ tr:hover td{background:var(--bg2)}
             <div class="fg"><label>Objetivos del agente</label><input id="cfg-goals" placeholder="Cargando…"/></div>
             <div class="fg full"><label>Restricciones (lo que NO debe hacer)</label><textarea id="cfg-restrictions" rows="2" placeholder="Cargando…"></textarea></div>
           </div>
+
+          <div style="height:1px;background:var(--border);margin:18px 0"></div>
+          <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">📞 Teléfonos del negocio</div>
+          <div style="background:var(--accent-lt);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--accent-dk);margin-bottom:14px;line-height:1.5">
+            Estos números se leen directo desde acá — no hace falta configurar variables en Render.
+          </div>
+          <div class="form-grid">
+            <div class="fg">
+              <label>Teléfono administrador</label>
+              <input id="cfg-admin-phone" placeholder="5493516002716" style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
+              <div class="hint">Recibe alertas del sistema (RAM, reconexiones, reporte diario). Formato: 549 + número sin 0 ni 15.</div>
+            </div>
+            <div class="fg">
+              <label>Teléfono asesor (derivaciones)</label>
+              <input id="cfg-redirect-phone" placeholder="5493516002716" style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
+              <div class="hint">Cuando el cliente pide hablar con una persona, el bot le envía el link a este número y le manda un resumen de la conversación.</div>
+            </div>
+          </div>
+
           <div style="display:flex;gap:8px;margin-top:16px">
             <button class="btn btn-primary" onclick="saveSettings()">💾 Guardar cambios</button>
             <button class="btn btn-ghost" onclick="loadSettings()">↺ Recargar</button>
@@ -1258,22 +1277,26 @@ async function loadSettings() {
   try {
     const d = await apiFetch('/api/settings')
     const s = d.settings || {}
-    document.getElementById('cfg-personality').value = s.personality_prompt || ''
-    document.getElementById('cfg-business').value = s.business_description || ''
-    document.getElementById('cfg-welcome').value = s.welcome_message || ''
-    document.getElementById('cfg-goals').value = s.goals || ''
-    document.getElementById('cfg-restrictions').value = s.restrictions || ''
+    document.getElementById('cfg-personality').value   = s.personality_prompt   || ''
+    document.getElementById('cfg-business').value      = s.business_description  || ''
+    document.getElementById('cfg-welcome').value       = s.welcome_message        || ''
+    document.getElementById('cfg-goals').value         = s.goals                  || ''
+    document.getElementById('cfg-restrictions').value  = s.restrictions           || ''
+    document.getElementById('cfg-admin-phone').value   = s.admin_phone            || ''
+    document.getElementById('cfg-redirect-phone').value = s.redirect_phone        || ''
   } catch { toast('Error al cargar configuración', 'err') }
 }
 
 async function saveSettings() {
   try {
     const body = {
-      personality_prompt: document.getElementById('cfg-personality').value,
+      personality_prompt:   document.getElementById('cfg-personality').value,
       business_description: document.getElementById('cfg-business').value,
-      welcome_message: document.getElementById('cfg-welcome').value,
-      goals: document.getElementById('cfg-goals').value,
-      restrictions: document.getElementById('cfg-restrictions').value,
+      welcome_message:      document.getElementById('cfg-welcome').value,
+      goals:                document.getElementById('cfg-goals').value,
+      restrictions:         document.getElementById('cfg-restrictions').value,
+      admin_phone:          document.getElementById('cfg-admin-phone').value.trim(),
+      redirect_phone:       document.getElementById('cfg-redirect-phone').value.trim(),
     }
     const d = await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify(body) })
     if (d.ok) { const ok = document.getElementById('save-ok'); ok.style.display = 'inline'; setTimeout(() => ok.style.display = 'none', 3000); toast('Configuración guardada') }
