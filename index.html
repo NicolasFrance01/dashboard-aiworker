@@ -488,19 +488,44 @@ tr:hover td{background:var(--bg2)}
       </div>
 
       <div class="biz-panel active" id="biz-general">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div class="card">
-            <div class="card-hdr"><h3>🏢 Información del negocio</h3></div>
-            <div class="card-body">
-              <div class="form-grid">
-                <div class="fg full"><label>Nombre del negocio</label><input placeholder="Mi Empresa SRL"/></div>
-                <div class="fg full"><label>Descripción</label><textarea placeholder="¿A qué se dedica tu negocio?"></textarea></div>
-                <div class="fg"><label>Teléfono</label><input placeholder="+54 9 351..."/></div>
-                <div class="fg"><label>Email</label><input placeholder="info@empresa.com"/></div>
-                <div class="fg full"><label>Dirección</label><input placeholder="Av. Colón 123, Córdoba"/></div>
+        <!-- AI Personality settings (moved from Configuración) -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr"><h3>🧠 Personalidad del Agente IA</h3><span id="biz-save-ok" style="font-size:12px;color:var(--accent);display:none">✓ Guardado</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="fg full"><label>Prompt de personalidad</label><textarea id="cfg-personality" rows="5" placeholder="Cargando…"></textarea></div>
+              <div class="fg full"><label>Descripción del negocio</label><textarea id="cfg-business" rows="3" placeholder="Cargando…"></textarea></div>
+              <div class="fg"><label>Mensaje de bienvenida</label><input id="cfg-welcome" placeholder="Cargando…"/></div>
+              <div class="fg"><label>Objetivos del agente</label><input id="cfg-goals" placeholder="Cargando…"/></div>
+              <div class="fg full"><label>Restricciones (lo que NO debe hacer)</label><textarea id="cfg-restrictions" rows="2" placeholder="Cargando…"></textarea></div>
+            </div>
+
+            <div style="height:1px;background:var(--border);margin:18px 0"></div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">📞 Teléfonos del negocio</div>
+            <div style="background:var(--accent-lt);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--accent-dk);margin-bottom:14px;line-height:1.5">
+              Estos números se leen directo desde acá — no hace falta configurar variables en Render.
+            </div>
+            <div class="form-grid">
+              <div class="fg">
+                <label>Teléfono administrador</label>
+                <input id="cfg-admin-phone" placeholder="5493516002716" style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
+                <div class="hint">Recibe alertas del sistema. Formato: 549 + número sin 0 ni 15.</div>
+              </div>
+              <div class="fg">
+                <label>Teléfono asesor (derivaciones)</label>
+                <input id="cfg-redirect-phone" placeholder="5493516002716" style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
+                <div class="hint">Cuando el cliente pide hablar con un asesor, el bot le envía el link a este número y le manda un resumen.</div>
               </div>
             </div>
+
+            <div style="display:flex;gap:8px;margin-top:18px">
+              <button class="btn btn-primary" onclick="saveSettings('biz')">💾 Guardar cambios</button>
+              <button class="btn btn-ghost" onclick="loadSettings()">↺ Recargar</button>
+            </div>
           </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="card">
             <div class="card-hdr"><h3>🕐 Horarios de atención</h3></div>
             <div class="card-body">
@@ -551,13 +576,27 @@ tr:hover td{background:var(--bg2)}
       </div>
 
       <div class="biz-panel" id="biz-faqs">
-        <div class="card">
-          <div class="card-hdr"><h3>❓ Consultas Frecuentes</h3><button class="btn btn-primary btn-sm" onclick="addFaq()">+ Nueva FAQ</button></div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-hdr"><h3>❓ Consultas Frecuentes</h3><span id="faq-save-ok" style="font-size:12px;color:var(--accent);display:none">✓ Guardado</span></div>
           <div class="card-body">
-            <div class="fg full" style="margin-bottom:16px"><label>Información general de la empresa</label><textarea id="general-info" rows="4" placeholder="Describí tu empresa, valores, propuesta de valor…"></textarea></div>
-            <div class="divider"></div>
+            <div style="background:var(--accent-lt);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--accent-dk);margin-bottom:16px;line-height:1.5">
+              El agente usa estas preguntas y respuestas como referencia directa cuando los clientes consultan temas similares.
+            </div>
+
+            <!-- Add FAQ form -->
+            <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;background:var(--bg2);margin-bottom:16px">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Nueva pregunta frecuente</div>
+              <div class="fg" style="margin-bottom:10px"><label>Pregunta</label><input id="faq-q" placeholder="Ej: ¿Cuánto tiempo tarda una reforma?"/></div>
+              <div class="fg" style="margin-bottom:10px"><label>Respuesta</label><textarea id="faq-a" rows="3" placeholder="Respuesta que el agente debe dar cuando le hagan esta pregunta…"></textarea></div>
+              <button class="btn btn-primary btn-sm" onclick="addFaq()">+ Agregar FAQ</button>
+            </div>
+
             <div id="faqs-list">
-              <div class="empty-state"><span class="empty-icon">❓</span><p>Aún no hay FAQs. Agregá preguntas frecuentes para mejorar las respuestas del agente.</p></div>
+              <div class="empty-state"><span class="empty-icon">❓</span><p>Aún no hay FAQs.<br/>Agregá preguntas frecuentes para mejorar las respuestas del agente.</p></div>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:8px">
+              <button class="btn btn-primary" onclick="saveFaqs()">💾 Guardar FAQs</button>
+              <button class="btn btn-ghost" onclick="loadSettings()">↺ Recargar</button>
             </div>
           </div>
         </div>
@@ -592,37 +631,50 @@ tr:hover td{background:var(--bg2)}
 
     <!-- ═══ AGENTES ═══ -->
     <div class="view view-pad" id="view-agentes">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-        <div><h2 style="font-size:16px;font-weight:700">Agentes IA</h2><p style="font-size:13px;color:var(--text2);margin-top:2px">Orquestá el equipo de agentes especializados para tu negocio</p></div>
-        <button class="btn btn-primary" onclick="openNewAgent()">+ Nuevo agente</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div><h2 style="font-size:16px;font-weight:700">Agentes IA</h2><p style="font-size:13px;color:var(--text2);margin-top:2px">5 agentes nativos + personalizados — activación automática por palabras clave</p></div>
+        <button class="btn btn-primary" onclick="openAgentDrawer()">+ Nuevo agente</button>
       </div>
-      <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px">Agentes nativos</div>
+      <div style="background:var(--bg3);border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.5">
+        Los agentes se activan automáticamente según el mensaje del cliente — sin latencia extra. El badge de cada mensaje en Conversaciones muestra qué agente respondió.
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px">Agentes nativos (activos)</div>
       <div class="agents-grid" id="native-agents"></div>
       <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin:20px 0 12px">Agentes personalizados</div>
       <div class="agents-grid" id="custom-agents">
         <div class="empty-state" style="grid-column:1/-1;border:1.5px dashed var(--border);border-radius:var(--r);"><span class="empty-icon">🧩</span><p>Aún no hay agentes personalizados.<br/>Creá un agente especializado para tu estrategia digital.</p></div>
       </div>
 
-      <!-- New agent drawer -->
-      <div id="agent-drawer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:flex-end">
-        <div style="width:480px;height:100%;background:var(--bg);overflow-y:auto;box-shadow:var(--sh-lg)">
-          <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-            <h3 style="flex:1;font-size:15px;font-weight:600">Nuevo agente personalizado</h3>
-            <button class="btn-icon" onclick="closeNewAgent()">✕</button>
+      <!-- Agent drawer (create/edit) -->
+      <div id="agent-drawer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-start;justify-content:flex-end">
+        <div style="width:500px;height:100%;background:var(--bg);overflow-y:auto;box-shadow:var(--sh-lg);display:flex;flex-direction:column">
+          <div style="padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;position:sticky;top:0;background:var(--bg);z-index:1">
+            <h3 style="flex:1;font-size:15px;font-weight:600" id="agent-drawer-title">Nuevo agente</h3>
+            <button class="btn-icon" onclick="closeAgentDrawer()">✕</button>
           </div>
-          <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-            <div class="fg"><label>Nombre del agente</label><input id="na-name" placeholder="Ej: Agente de Soporte"/></div>
-            <div class="fg"><label>Emoji / Avatar</label><input id="na-emoji" placeholder="🎯" style="width:80px"/></div>
-            <div class="fg"><label>Descripción breve</label><input id="na-desc" placeholder="¿Cuál es su función principal?"/></div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:14px;flex:1">
+            <div id="agent-native-banner" style="display:none;background:var(--accent-lt);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--accent-dk);line-height:1.5">
+              Este es un agente nativo. Podés personalizar su prompt — si lo dejás vacío, se usa el prompt predeterminado.
+            </div>
+            <div class="fg" id="agent-drawer-name-row"><label>Nombre del agente</label><input id="na-name" placeholder="Ej: Agente de Soporte"/></div>
+            <div style="display:grid;grid-template-columns:1fr 80px;gap:10px">
+              <div class="fg"><label>Descripción breve</label><input id="na-desc" placeholder="¿Cuál es su función principal?"/></div>
+              <div class="fg"><label>Emoji</label><input id="na-emoji" placeholder="🎯" style="text-align:center;font-size:20px"/></div>
+            </div>
             <div class="fg">
               <label>Palabras clave de activación</label>
+              <div class="hint" style="margin-bottom:6px">El agente se activa cuando el mensaje del cliente contiene alguna de estas palabras</div>
               <input id="na-kw-input" placeholder="Escribí y presioná Enter" onkeydown="addKeyword(event)"/>
               <div class="keyword-chips" id="na-keywords" style="margin-top:6px"></div>
             </div>
-            <div class="fg"><label>Prompt personalizado</label><textarea id="na-prompt" rows="6" placeholder="Definí el comportamiento detallado del agente. Ej: Siempre saludá con el nombre del cliente, preguntá las medidas antes de cotizar, respondé mínimo 4-5 líneas…"></textarea><div class="hint">Instrucciones específicas que el agente seguirá en cada interacción</div></div>
-            <div style="display:flex;gap:8px;padding-top:4px">
-              <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveCustomAgent()">Crear agente</button>
-              <button class="btn btn-ghost" onclick="closeNewAgent()">Cancelar</button>
+            <div class="fg">
+              <label>Prompt personalizado</label>
+              <textarea id="na-prompt" rows="8" placeholder="Instrucciones detalladas para el agente. Ej: Siempre saludá al cliente por nombre, preguntá las medidas antes de cotizar, mencioná el garantía de fábrica…"></textarea>
+              <div class="hint">Instrucciones específicas que el agente seguirá en cada interacción</div>
+            </div>
+            <div style="display:flex;gap:8px;padding-top:4px;border-top:1px solid var(--border)">
+              <button class="btn btn-primary" style="flex:1;justify-content:center" id="agent-save-btn" onclick="saveAgentDrawer()">Crear agente</button>
+              <button class="btn btn-ghost" onclick="closeAgentDrawer()">Cancelar</button>
             </div>
           </div>
         </div>
@@ -680,38 +732,55 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
 
-      <!-- Personalidad IA -->
+      <!-- Control de acceso -->
       <div class="card" style="margin-bottom:16px">
-        <div class="card-hdr"><h3>🧠 Personalidad del Agente IA</h3><span id="save-ok" style="font-size:12px;color:var(--accent);display:none">✓ Guardado</span></div>
+        <div class="card-hdr"><h3>🔐 Control de acceso</h3><span id="save-ok" style="font-size:12px;color:var(--accent);display:none">✓ Guardado</span></div>
         <div class="card-body">
-          <div class="form-grid">
-            <div class="fg full"><label>Prompt de personalidad</label><textarea id="cfg-personality" rows="5" placeholder="Cargando…"></textarea></div>
-            <div class="fg full"><label>Descripción del negocio</label><textarea id="cfg-business" rows="3" placeholder="Cargando…"></textarea></div>
-            <div class="fg"><label>Mensaje de bienvenida</label><input id="cfg-welcome" placeholder="Cargando…"/></div>
-            <div class="fg"><label>Objetivos del agente</label><input id="cfg-goals" placeholder="Cargando…"/></div>
-            <div class="fg full"><label>Restricciones (lo que NO debe hacer)</label><textarea id="cfg-restrictions" rows="2" placeholder="Cargando…"></textarea></div>
-          </div>
 
-          <div style="height:1px;background:var(--border);margin:18px 0"></div>
-          <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">📞 Teléfonos del negocio</div>
-          <div style="background:var(--accent-lt);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--accent-dk);margin-bottom:14px;line-height:1.5">
-            Estos números se leen directo desde acá — no hace falta configurar variables en Render.
-          </div>
-          <div class="form-grid">
-            <div class="fg">
-              <label>Teléfono administrador</label>
-              <input id="cfg-admin-phone" placeholder="5493516002716" style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
-              <div class="hint">Recibe alertas del sistema (RAM, reconexiones, reporte diario). Formato: 549 + número sin 0 ni 15.</div>
+          <!-- WHITELIST -->
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📋 Lista blanca</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);margin-bottom:10px">
+            <div>
+              <div style="font-size:13px;font-weight:500">Responder a todos los contactos</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px" id="wl-mode-hint">El bot acepta mensajes de cualquier número</div>
             </div>
-            <div class="fg">
-              <label>Teléfono asesor (derivaciones)</label>
-              <input id="cfg-redirect-phone" placeholder="5493516002716" style="font-family:'JetBrains Mono',monospace;font-size:13px"/>
-              <div class="hint">Cuando el cliente pide hablar con una persona, el bot le envía el link a este número y le manda un resumen de la conversación.</div>
+            <div class="toggle on" id="wl-all-toggle" onclick="toggleWhitelistAll()"></div>
+          </div>
+          <div id="wl-specific-area" style="display:none;margin-bottom:4px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5">Solo estos números pueden chatear. Si la lista está vacía, el bot no responde a nadie.<br/><code style="font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:1px 5px;border-radius:3px">549 + número sin 0 ni 15</code></div>
+            <div id="whitelist-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
+            <div style="display:flex;gap:8px">
+              <input id="whitelist-input" placeholder="Ej: 5493512011783" style="font-family:'JetBrains Mono',monospace;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;outline:none;width:220px;transition:border-color .2s"
+                onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addWhitelistPhone()}"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+              <button class="btn btn-secondary btn-sm" onclick="addWhitelistPhone()">+ Agregar</button>
             </div>
           </div>
 
-          <div style="display:flex;gap:8px;margin-top:16px">
-            <button class="btn btn-primary" onclick="saveSettings()">💾 Guardar cambios</button>
+          <div style="height:1px;background:var(--border);margin:16px 0"></div>
+
+          <!-- BLACKLIST -->
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">🚫 Lista negra</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);margin-bottom:10px">
+            <div>
+              <div style="font-size:13px;font-weight:500">Bloquear a todos los contactos</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px" id="bl-mode-hint">El bot responde con normalidad</div>
+            </div>
+            <div class="toggle" id="bl-all-toggle" onclick="toggleBlacklistAll()"></div>
+          </div>
+          <div id="bl-specific-area" style="display:none;margin-bottom:4px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5">El bot ignora mensajes de estos números específicos.<br/><code style="font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:1px 5px;border-radius:3px">549 + número sin 0 ni 15</code></div>
+            <div id="blacklist-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>
+            <div style="display:flex;gap:8px">
+              <input id="blacklist-input" placeholder="Ej: 5493512011783" style="font-family:'JetBrains Mono',monospace;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;outline:none;width:220px;transition:border-color .2s"
+                onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();addBlacklistPhone()}"
+                onfocus="this.style.borderColor='var(--danger)'" onblur="this.style.borderColor='var(--border)'"/>
+              <button class="btn btn-secondary btn-sm" onclick="addBlacklistPhone()">+ Agregar</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:18px">
+            <button class="btn btn-primary" onclick="saveSettings('cfg')">💾 Guardar control de acceso</button>
             <button class="btn btn-ghost" onclick="loadSettings()">↺ Recargar</button>
           </div>
         </div>
@@ -825,7 +894,7 @@ tr:hover td{background:var(--bg2)}
 <div class="prod-drawer-overlay" id="catalog-modal" onclick="if(event.target===this)closeCatalogModal()">
   <div class="prod-drawer" style="width:460px">
     <div class="prod-drawer-hdr">
-      <h3 style="flex:1;font-size:15px;font-weight:600">Agregar imagen al catálogo</h3>
+      <h3 style="flex:1;font-size:15px;font-weight:600" id="catalog-modal-title">Agregar imagen al catálogo</h3>
       <button class="btn-icon" onclick="closeCatalogModal()">✕</button>
     </div>
     <div class="prod-drawer-body">
@@ -893,11 +962,11 @@ function boot() {
   document.getElementById('setup').style.display = 'none'
   document.getElementById('app').style.display = 'block'
   document.getElementById('cfg-url').textContent = API.replace('https://', '')
-  initAgents()
   initHours()
   initCalendar()
   loadProducts()
   loadCatalog()
+  loadSettings().then(() => initAgents())
   init()
 }
 
@@ -912,6 +981,8 @@ function nav(id, btn) {
   btn.classList.add('active')
   document.getElementById('hdr-title').textContent = titles[id]
   if (id === 'inbox') loadConversations()
+  if (id === 'negocio') loadSettings()
+  if (id === 'agentes') { loadSettings(); initAgents() }
   if (id === 'config') { loadStatus(); loadSettings() }
 }
 
@@ -1172,47 +1243,113 @@ function sendManual(id) {
 // AGENTES IA
 // ═══════════════════════════════════════════════════════════════════
 const NATIVE_AGENTS = [
-  { emoji: '🤝', name: 'Generalista', desc: 'Primer punto de contacto del negocio. Responde saludos, despedidas y consultas generales con calidez y eficiencia.', active: true },
-  { emoji: '🎯', name: 'Asesor', desc: 'Presenta detalladamente productos y servicios, proporciona precios y guía al cliente hacia la conversión generando interés.', active: true },
-  { emoji: '📅', name: 'Gestor de Turnos', desc: 'Gestiona reservas con personalidad, recuerda el último turno del cliente y sugiere servicios adicionales.', active: false },
-  { emoji: '💰', name: 'Ventas', desc: 'Detecta clientes indecisos para ayudarlos a decidirse, enfocándose en generar confianza y valor, sin presionar.', active: false },
-  { emoji: '🔄', name: 'Seguimiento', desc: 'Acompaña a los clientes en el tiempo, detectando retornos después de ausencia para retomar la conversación con contexto.', active: false },
+  {
+    type: 'generalista', emoji: '🤖', name: 'Ediluz · General',
+    badge: { cls: 'badge-gray', label: 'Generalista' },
+    badgeCls: 'at-generalista',
+    desc: 'Primer punto de contacto. Responde saludos y consultas generales, y orienta al cliente hacia el agente correcto.',
+    keywords: ['hola', 'buenos días', 'buenas tardes', 'consulta', 'información', 'ayuda'],
+    trigger: 'Se activa cuando el mensaje no corresponde a ningún otro agente',
+  },
+  {
+    type: 'servicios', emoji: '🔨', name: 'Agente Servicios',
+    badge: { cls: 'badge-blue', label: 'Servicios' },
+    badgeCls: 'at-servicios',
+    desc: 'Especialista en reformas, impermeabilización, estructuras, pintura y obras en general. Explica servicios y ofrece visita sin cargo.',
+    keywords: ['reforma', 'impermeabilizar', 'gotera', 'humedad', 'filtración', 'membrana', 'pintura', 'obra', 'albañil', 'revoque', 'piso', 'cerámico'],
+    trigger: 'reforma, obra, humedad, pintura, membrana, estructura…',
+  },
+  {
+    type: 'productos', emoji: '🏷️', name: 'Agente Productos',
+    badge: { cls: 'badge-purple', label: 'Productos' },
+    badgeCls: 'at-productos',
+    desc: 'Asesor de marcas: PIATTI (aberturas PVC/aluminio), LIV (mobiliario), INTERIA (cocinas y vestidores), Escaleras a medida.',
+    keywords: ['piatti', 'portón', 'abertura', 'ventana', 'puerta', 'pvc', 'aluminio', 'liv', 'sillón', 'interia', 'cocina', 'vestidor', 'escalera', 'mueble'],
+    trigger: 'PIATTI, portón, LIV, sillón, INTERIA, cocina, escalera…',
+  },
+  {
+    type: 'cotizacion', emoji: '💰', name: 'Agente Cotización',
+    badge: { cls: 'badge-amber', label: 'Cotización' },
+    badgeCls: 'at-cotizacion',
+    desc: 'Captura la consulta de presupuesto y orienta al cliente para obtener una cotización a medida con un asesor.',
+    keywords: ['presupuesto', 'cotización', 'precio', 'cuánto cuesta', 'cuánto vale', 'costo', 'tarifa', 'financiación'],
+    trigger: 'presupuesto, precio, cuánto cuesta, cotización…',
+  },
+  {
+    type: 'redireccion', emoji: '📱', name: 'Agente Redirección',
+    badge: { cls: 'badge-red', label: 'Redirección' },
+    badgeCls: 'at-redireccion',
+    desc: 'Cuando el cliente pide hablar con un asesor: envía el link de WhatsApp del asesor y le manda al asesor un resumen de la conversación.',
+    keywords: ['hablar con persona', 'hablar con asesor', 'quiero un asesor', 'quiero ser atendido', 'derivame', 'un humano'],
+    trigger: '"quiero hablar con un asesor", "me comunican", "hablen conmigo"…',
+  },
 ]
+
+let agentPrompts = {}   // loaded from DB
 
 function initAgents() {
   const grid = document.getElementById('native-agents')
-  grid.innerHTML = NATIVE_AGENTS.map((a, i) => `
-    <div class="agent-card ${a.active ? 'active-card' : ''}" id="acard-${i}">
-      <span class="agent-emoji">${a.emoji}</span>
-      <div class="agent-name">${a.name}</div>
-      <div class="agent-desc">${a.desc}</div>
-      <div class="agent-toggle">
-        <span class="badge ${a.active ? 'badge-green' : 'badge-gray'}" id="abadge-${i}">${a.active ? 'Activo' : 'Inactivo'}</span>
-        <div class="toggle ${a.active ? 'on' : ''}" id="atoggle-${i}" onclick="toggleAgent(${i})"></div>
+  grid.innerHTML = NATIVE_AGENTS.map((a) => {
+    const hasCustom = !!agentPrompts[a.type]
+    return `<div class="agent-card active-card" style="border-left:4px solid var(--accent)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <span class="agent-emoji" style="font-size:24px">${a.emoji}</span>
+        <span class="badge ${a.badge.cls}">${a.badge.label}</span>
       </div>
-    </div>`).join('')
+      <div class="agent-name" style="margin-bottom:4px">${a.name}</div>
+      <div class="agent-desc" style="margin-bottom:10px">${a.desc}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:10px">Activa con: ${a.trigger}</div>
+      <div class="keyword-chips" style="margin-bottom:12px">${a.keywords.map(k => `<span class="chip" style="font-size:10px">${esc(k)}</span>`).join('')}</div>
+      <div class="agent-toggle">
+        <span class="badge badge-green" style="font-size:10px">${hasCustom ? '✏️ Prompt personalizado' : '✓ Activo'}</span>
+        <button class="btn btn-ghost btn-sm" onclick="openAgentDrawer('${a.type}')">Editar</button>
+      </div>
+    </div>`
+  }).join('')
 }
 
-function toggleAgent(i) {
-  NATIVE_AGENTS[i].active = !NATIVE_AGENTS[i].active
-  const card = document.getElementById('acard-' + i)
-  const toggle = document.getElementById('atoggle-' + i)
-  const badge = document.getElementById('abadge-' + i)
-  const on = NATIVE_AGENTS[i].active
-  card.classList.toggle('active-card', on)
-  toggle.classList.toggle('on', on)
-  badge.className = 'badge ' + (on ? 'badge-green' : 'badge-gray')
-  badge.textContent = on ? 'Activo' : 'Inactivo'
-  toast(`Agente ${NATIVE_AGENTS[i].name} ${on ? 'activado' : 'desactivado'}`)
-}
-
-function openNewAgent() {
-  const d = document.getElementById('agent-drawer')
-  d.style.display = 'flex'
+function openAgentDrawer(type = null) {
+  const drawer = document.getElementById('agent-drawer')
+  drawer.style.display = 'flex'
   naKeywords = []
   document.getElementById('na-keywords').innerHTML = ''
+  document.getElementById('na-name').value = ''
+  document.getElementById('na-desc').value = ''
+  document.getElementById('na-emoji').value = ''
+  document.getElementById('na-prompt').value = ''
+
+  const nameRow = document.getElementById('agent-drawer-name-row')
+  const banner = document.getElementById('agent-native-banner')
+  const saveBtn = document.getElementById('agent-save-btn')
+
+  if (type) {
+    // Editing native agent
+    drawer.dataset.editType = type
+    drawer.dataset.editIdx = ''
+    const a = NATIVE_AGENTS.find(x => x.type === type)
+    document.getElementById('agent-drawer-title').textContent = `Editar — ${a.name}`
+    document.getElementById('na-name').value = a.name
+    document.getElementById('na-desc').value = a.desc
+    document.getElementById('na-emoji').value = a.emoji
+    document.getElementById('na-prompt').value = agentPrompts[type] || ''
+    naKeywords = [...a.keywords]
+    renderAgentKeywords()
+    nameRow.style.display = 'none'
+    banner.style.display = 'block'
+    saveBtn.textContent = 'Guardar cambios'
+  } else {
+    drawer.dataset.editType = ''
+    drawer.dataset.editIdx = ''
+    document.getElementById('agent-drawer-title').textContent = 'Nuevo agente personalizado'
+    nameRow.style.display = 'flex'
+    banner.style.display = 'none'
+    saveBtn.textContent = 'Crear agente'
+  }
 }
-function closeNewAgent() { document.getElementById('agent-drawer').style.display = 'none' }
+
+function closeAgentDrawer() {
+  document.getElementById('agent-drawer').style.display = 'none'
+}
 
 function addKeyword(e) {
   if (e.key !== 'Enter') return
@@ -1220,29 +1357,53 @@ function addKeyword(e) {
   const val = e.target.value.trim()
   if (!val || naKeywords.includes(val)) { e.target.value = ''; return }
   naKeywords.push(val)
-  const c = document.getElementById('na-keywords')
-  c.innerHTML = naKeywords.map(k => `<span class="chip" onclick="removeKw('${esc(k)}')" style="cursor:pointer">${esc(k)} ✕</span>`).join('')
+  renderAgentKeywords()
   e.target.value = ''
 }
+
 function removeKw(k) {
   naKeywords = naKeywords.filter(x => x !== k)
-  document.getElementById('na-keywords').innerHTML = naKeywords.map(kw => `<span class="chip" onclick="removeKw('${esc(kw)}')" style="cursor:pointer">${esc(kw)} ✕</span>`).join('')
+  renderAgentKeywords()
 }
 
-function saveCustomAgent() {
+function renderAgentKeywords() {
+  document.getElementById('na-keywords').innerHTML = naKeywords.map(k => `<span class="chip" onclick="removeKw('${esc(k)}')" style="cursor:pointer">${esc(k)} ✕</span>`).join('')
+}
+
+async function saveAgentDrawer() {
+  const drawer = document.getElementById('agent-drawer')
+  const editType = drawer.dataset.editType
+  const prompt = document.getElementById('na-prompt').value.trim()
+
+  if (editType) {
+    // Save native agent prompt override to DB
+    agentPrompts[editType] = prompt || undefined
+    if (!prompt) delete agentPrompts[editType]
+    try {
+      await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify({ agent_prompts: agentPrompts }) })
+      toast(`Prompt del agente guardado`)
+      closeAgentDrawer()
+      initAgents()
+    } catch { toast('Error guardando', 'err') }
+    return
+  }
+
+  // Custom agent
   const name = document.getElementById('na-name').value.trim()
   const emoji = document.getElementById('na-emoji').value.trim() || '🧩'
   const desc = document.getElementById('na-desc').value.trim()
-  const prompt = document.getElementById('na-prompt').value.trim()
   if (!name) { toast('Ingresá un nombre', 'err'); return }
-  customAgents.push({ name, emoji, desc, prompt, keywords: [...naKeywords] })
+
+  const editIdx = drawer.dataset.editIdx !== '' ? parseInt(drawer.dataset.editIdx) : -1
+  if (editIdx >= 0) {
+    customAgents[editIdx] = { name, emoji, desc, prompt, keywords: [...naKeywords] }
+    toast(`Agente "${name}" actualizado`)
+  } else {
+    customAgents.push({ name, emoji, desc, prompt, keywords: [...naKeywords] })
+    toast(`Agente "${name}" creado`)
+  }
   renderCustomAgents()
-  closeNewAgent()
-  document.getElementById('na-name').value = ''
-  document.getElementById('na-emoji').value = ''
-  document.getElementById('na-desc').value = ''
-  document.getElementById('na-prompt').value = ''
-  toast(`Agente "${name}" creado`)
+  closeAgentDrawer()
 }
 
 function renderCustomAgents() {
@@ -1256,12 +1417,33 @@ function renderCustomAgents() {
       <span class="agent-emoji">${a.emoji}</span>
       <div class="agent-name">${esc(a.name)}</div>
       <div class="agent-desc">${esc(a.desc || 'Agente personalizado')}</div>
-      ${a.keywords.length ? `<div class="keyword-chips">${a.keywords.map(k => `<span class="chip">${esc(k)}</span>`).join('')}</div>` : ''}
-      <div class="agent-toggle" style="margin-top:12px">
+      ${a.keywords.length ? `<div class="keyword-chips" style="margin-bottom:10px">${a.keywords.map(k => `<span class="chip" style="font-size:10px">${esc(k)}</span>`).join('')}</div>` : ''}
+      <div class="agent-toggle" style="margin-top:auto">
         <span class="badge badge-blue">Custom</span>
-        <button class="btn btn-ghost btn-sm" onclick="deleteCustomAgent(${i})">Eliminar</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="editCustomAgent(${i})">Editar</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteCustomAgent(${i})">✕</button>
+        </div>
       </div>
     </div>`).join('')
+}
+
+function editCustomAgent(i) {
+  const a = customAgents[i]
+  const drawer = document.getElementById('agent-drawer')
+  drawer.style.display = 'flex'
+  drawer.dataset.editType = ''
+  drawer.dataset.editIdx = i
+  document.getElementById('agent-drawer-title').textContent = `Editar — ${a.name}`
+  document.getElementById('na-name').value = a.name
+  document.getElementById('na-desc').value = a.desc || ''
+  document.getElementById('na-emoji').value = a.emoji || '🧩'
+  document.getElementById('na-prompt').value = a.prompt || ''
+  naKeywords = [...(a.keywords || [])]
+  renderAgentKeywords()
+  document.getElementById('agent-drawer-name-row').style.display = 'flex'
+  document.getElementById('agent-native-banner').style.display = 'none'
+  document.getElementById('agent-save-btn').textContent = 'Guardar cambios'
 }
 
 function deleteCustomAgent(i) {
@@ -1273,35 +1455,175 @@ function deleteCustomAgent(i) {
 // ═══════════════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════════════
+let _whitelistAll    = true
+let _blacklistAll    = false
+let _whitelistPhones = []
+let _blacklistPhones = []
+let _faqs            = []
+
 async function loadSettings() {
   try {
     const d = await apiFetch('/api/settings')
     const s = d.settings || {}
-    document.getElementById('cfg-personality').value   = s.personality_prompt   || ''
-    document.getElementById('cfg-business').value      = s.business_description  || ''
-    document.getElementById('cfg-welcome').value       = s.welcome_message        || ''
-    document.getElementById('cfg-goals').value         = s.goals                  || ''
-    document.getElementById('cfg-restrictions').value  = s.restrictions           || ''
-    document.getElementById('cfg-admin-phone').value   = s.admin_phone            || ''
-    document.getElementById('cfg-redirect-phone').value = s.redirect_phone        || ''
+
+    // AI Personality (now in Mi Negocio)
+    const p = document.getElementById('cfg-personality')
+    if (p) p.value = s.personality_prompt   || ''
+    const b = document.getElementById('cfg-business')
+    if (b) b.value = s.business_description  || ''
+    const w = document.getElementById('cfg-welcome')
+    if (w) w.value = s.welcome_message        || ''
+    const g = document.getElementById('cfg-goals')
+    if (g) g.value = s.goals                  || ''
+    const r = document.getElementById('cfg-restrictions')
+    if (r) r.value = s.restrictions           || ''
+    const ap = document.getElementById('cfg-admin-phone')
+    if (ap) ap.value = s.admin_phone           || ''
+    const rp = document.getElementById('cfg-redirect-phone')
+    if (rp) rp.value = s.redirect_phone       || ''
+
+    // Whitelist / Blacklist
+    const wl = Array.isArray(s.allowed_phones) ? s.allowed_phones : []
+    _whitelistAll = wl.length === 0   // empty list = all allowed
+    _whitelistPhones = wl
+    renderWhitelistUI()
+
+    _blacklistAll = !!s.blacklist_all
+    _blacklistPhones = Array.isArray(s.blacklist_phones) ? s.blacklist_phones : []
+    renderBlacklistUI()
+
+    // Agent prompts
+    agentPrompts = (s.agent_prompts && typeof s.agent_prompts === 'object') ? s.agent_prompts : {}
+
+    // FAQs
+    _faqs = Array.isArray(s.faqs) ? s.faqs : []
+    renderFaqs()
+
   } catch { toast('Error al cargar configuración', 'err') }
 }
 
-async function saveSettings() {
+async function saveSettings(source = 'biz') {
   try {
-    const body = {
-      personality_prompt:   document.getElementById('cfg-personality').value,
-      business_description: document.getElementById('cfg-business').value,
-      welcome_message:      document.getElementById('cfg-welcome').value,
-      goals:                document.getElementById('cfg-goals').value,
-      restrictions:         document.getElementById('cfg-restrictions').value,
-      admin_phone:          document.getElementById('cfg-admin-phone').value.trim(),
-      redirect_phone:       document.getElementById('cfg-redirect-phone').value.trim(),
+    let body = {}
+    if (source === 'biz') {
+      body = {
+        personality_prompt:   document.getElementById('cfg-personality')?.value   || undefined,
+        business_description: document.getElementById('cfg-business')?.value      || undefined,
+        welcome_message:      document.getElementById('cfg-welcome')?.value       || undefined,
+        goals:                document.getElementById('cfg-goals')?.value         || undefined,
+        restrictions:         document.getElementById('cfg-restrictions')?.value  || undefined,
+        admin_phone:          document.getElementById('cfg-admin-phone')?.value?.trim()   || undefined,
+        redirect_phone:       document.getElementById('cfg-redirect-phone')?.value?.trim() || undefined,
+      }
+    } else {
+      // 'cfg' = access control section
+      body = {
+        allowed_phones:   _whitelistAll ? [] : [..._whitelistPhones],
+        blacklist_phones: [..._blacklistPhones],
+        blacklist_all:    _blacklistAll,
+      }
     }
     const d = await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify(body) })
-    if (d.ok) { const ok = document.getElementById('save-ok'); ok.style.display = 'inline'; setTimeout(() => ok.style.display = 'none', 3000); toast('Configuración guardada') }
-    else toast('Error al guardar', 'err')
+    if (d.ok) {
+      const okId = source === 'biz' ? 'biz-save-ok' : 'save-ok'
+      const ok = document.getElementById(okId)
+      if (ok) { ok.style.display = 'inline'; setTimeout(() => ok.style.display = 'none', 3000) }
+      toast('Guardado correctamente')
+    } else toast('Error al guardar', 'err')
   } catch { toast('Error de conexión', 'err') }
+}
+
+// ── Whitelist UI ─────────────────────────────────────────────────
+function toggleWhitelistAll() {
+  _whitelistAll = !_whitelistAll
+  renderWhitelistUI()
+}
+
+function renderWhitelistUI() {
+  const toggle = document.getElementById('wl-all-toggle')
+  const area   = document.getElementById('wl-specific-area')
+  const hint   = document.getElementById('wl-mode-hint')
+  if (!toggle) return
+  toggle.classList.toggle('on', _whitelistAll)
+  area.style.display = _whitelistAll ? 'none' : 'block'
+  hint.textContent = _whitelistAll
+    ? 'El bot acepta mensajes de cualquier número'
+    : (_whitelistPhones.length === 0 ? '⚠️ Lista vacía — el bot no responde a nadie' : `Solo ${_whitelistPhones.length} número(s) habilitado(s)`)
+  renderWhitelistChips()
+}
+
+function renderWhitelistChips() {
+  const el = document.getElementById('whitelist-chips')
+  if (!el) return
+  el.innerHTML = _whitelistPhones.map((p, i) => phoneChip(p, i, 'removeWhitelistPhone')).join('')
+}
+
+function addWhitelistPhone() {
+  const input = document.getElementById('whitelist-input')
+  const val = input.value.trim().replace(/\D/g, '')
+  if (!val) return
+  if (_whitelistPhones.includes(val)) { toast('Ese número ya está en la lista'); input.value = ''; return }
+  _whitelistPhones.push(val)
+  renderWhitelistUI()
+  input.value = ''
+  input.focus()
+}
+
+function removeWhitelistPhone(idx) {
+  _whitelistPhones.splice(idx, 1)
+  renderWhitelistUI()
+}
+
+// ── Blacklist UI ─────────────────────────────────────────────────
+function toggleBlacklistAll() {
+  _blacklistAll = !_blacklistAll
+  renderBlacklistUI()
+}
+
+function renderBlacklistUI() {
+  const toggle = document.getElementById('bl-all-toggle')
+  const area   = document.getElementById('bl-specific-area')
+  const hint   = document.getElementById('bl-mode-hint')
+  if (!toggle) return
+  toggle.classList.toggle('on', _blacklistAll)
+  area.style.display = _blacklistAll ? 'none' : 'block'
+  hint.textContent = _blacklistAll
+    ? '⚠️ Bloqueo total activo — el bot no responde a nadie'
+    : (_blacklistPhones.length === 0 ? 'El bot responde con normalidad' : `${_blacklistPhones.length} número(s) bloqueado(s)`)
+  toggle.style.background = _blacklistAll ? 'var(--danger)' : ''
+  renderBlacklistChips()
+}
+
+function renderBlacklistChips() {
+  const el = document.getElementById('blacklist-chips')
+  if (!el) return
+  el.innerHTML = _blacklistPhones.map((p, i) => phoneChip(p, i, 'removeBlacklistPhone', true)).join('')
+}
+
+function addBlacklistPhone() {
+  const input = document.getElementById('blacklist-input')
+  const val = input.value.trim().replace(/\D/g, '')
+  if (!val) return
+  if (_blacklistPhones.includes(val)) { toast('Ese número ya está bloqueado'); input.value = ''; return }
+  _blacklistPhones.push(val)
+  renderBlacklistUI()
+  input.value = ''
+  input.focus()
+}
+
+function removeBlacklistPhone(idx) {
+  _blacklistPhones.splice(idx, 1)
+  renderBlacklistUI()
+}
+
+function phoneChip(phone, idx, removeFn, danger = false) {
+  const color = danger ? 'var(--danger-lt)' : 'var(--bg3)'
+  const border = danger ? '#fca5a5' : 'var(--border2)'
+  const textColor = danger ? 'var(--danger)' : 'var(--text)'
+  return `<span style="display:inline-flex;align-items:center;gap:5px;background:${color};border:1px solid ${border};border-radius:20px;padding:3px 10px 3px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${textColor}">
+    ${phone}
+    <button onclick="${removeFn}(${idx})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;line-height:1;padding:0;margin-left:2px" title="Eliminar">×</button>
+  </span>`
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1554,6 +1876,7 @@ function renderProducts() {
 // ── Catalog of images  (API-backed) ──────────────────────────────
 let catalog = []
 let catImgData = null
+let editingCatalogId = null
 
 async function loadCatalog() {
   try {
@@ -1566,15 +1889,31 @@ async function loadCatalog() {
   }
 }
 
-function openCatalogModal() {
+function openCatalogModal(id = null) {
+  editingCatalogId = id
   catImgData = null
   document.getElementById('cat-name').value = ''
   document.getElementById('cat-desc').value = ''
   document.getElementById('cat-when').value = ''
-  document.getElementById('cat-preview-wrap').innerHTML = `
-    <div style="font-size:30px;margin-bottom:8px">📸</div>
-    <div style="font-size:13px;font-weight:500;margin-bottom:4px">Hacé click o arrastrá la imagen</div>
-    <div style="font-size:11px;color:var(--text3)">JPG, PNG, WEBP — máx. 2MB</div>`
+
+  if (id !== null) {
+    const item = catalog.find(x => x.id === id)
+    if (!item) return
+    document.getElementById('catalog-modal-title').textContent = 'Editar imagen del catálogo'
+    document.getElementById('cat-name').value = item.name || ''
+    document.getElementById('cat-desc').value = item.description || ''
+    document.getElementById('cat-when').value = item.context_when || ''
+    document.getElementById('cat-preview-wrap').innerHTML = `<img src="${item.image_data}" class="upload-preview"/>`
+    catImgData = item.image_data  // keep existing unless replaced
+  } else {
+    document.getElementById('catalog-modal-title').textContent = 'Agregar imagen al catálogo'
+    document.getElementById('cat-preview-wrap').innerHTML = `
+      <div style="font-size:30px;margin-bottom:8px">📸</div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">Hacé click o arrastrá la imagen</div>
+      <div style="font-size:11px;color:var(--text3)">JPG, PNG, WEBP — máx. 2MB</div>`
+    catImgData = null
+  }
+
   document.getElementById('catalog-modal').classList.add('open')
 }
 
@@ -1585,7 +1924,7 @@ function closeCatalogModal() {
 function handleCatalogImage(e) {
   const f = e.target.files[0]
   if (!f) return
-  if (f.size > 2 * 1024 * 1024) { toast('Imagen muy grande (máx. 2MB)', true); return }
+  if (f.size > 2 * 1024 * 1024) { toast('Imagen muy grande (máx. 2MB)', 'err'); return }
   const reader = new FileReader()
   reader.onload = ev => {
     catImgData = ev.target.result
@@ -1597,23 +1936,28 @@ function handleCatalogImage(e) {
 }
 
 async function saveCatalogImage() {
-  if (!catImgData) { toast('Seleccioná una imagen primero', true); return }
   const name = document.getElementById('cat-name').value.trim()
-  if (!name) { toast('El nombre es obligatorio', true); return }
+  if (!name) { toast('El nombre es obligatorio', 'err'); return }
+  if (!catImgData && editingCatalogId === null) { toast('Seleccioná una imagen primero', 'err'); return }
+
+  const payload = {
+    name,
+    description:  document.getElementById('cat-desc').value.trim() || null,
+    context_when: document.getElementById('cat-when').value.trim() || null,
+    image_data:   catImgData || null,
+  }
+
   try {
-    await apiFetch('/api/catalog', {
-      method: 'POST',
-      body: JSON.stringify({
-        name,
-        description:  document.getElementById('cat-desc').value.trim(),
-        context_when: document.getElementById('cat-when').value.trim(),
-        image_data:   catImgData,
-      })
-    })
-    toast('Imagen guardada en el catálogo')
+    if (editingCatalogId !== null) {
+      await apiFetch(`/api/catalog/${editingCatalogId}`, { method: 'PUT', body: JSON.stringify(payload) })
+      toast('Imagen actualizada')
+    } else {
+      await apiFetch('/api/catalog', { method: 'POST', body: JSON.stringify(payload) })
+      toast('Imagen guardada en el catálogo')
+    }
     closeCatalogModal()
     await loadCatalog()
-  } catch { toast('Error guardando imagen', true) }
+  } catch { toast('Error guardando imagen', 'err') }
 }
 
 async function deleteCatalogItem(id) {
@@ -1623,7 +1967,7 @@ async function deleteCatalogItem(id) {
     await apiFetch(`/api/catalog/${id}`, { method: 'DELETE' })
     toast('Imagen eliminada')
     await loadCatalog()
-  } catch { toast('Error eliminando imagen', true) }
+  } catch { toast('Error eliminando imagen', 'err') }
 }
 
 function renderCatalog() {
@@ -1639,33 +1983,70 @@ function renderCatalog() {
       <div class="cat-item-body">
         <div class="cat-item-name" title="${esc(c.name)}">${esc(c.name)}</div>
         ${c.context_when ? `<div class="cat-item-ctx">${esc(c.context_when)}</div>` : (c.description ? `<div class="cat-item-ctx">${esc(c.description)}</div>` : '')}
-        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;color:var(--danger);font-size:10px" onclick="deleteCatalogItem(${c.id})">Eliminar</button>
+        <div style="display:flex;gap:4px;margin-top:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1;font-size:10px" onclick="openCatalogModal(${c.id})">Editar</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;color:var(--danger)" onclick="deleteCatalogItem(${c.id})">✕</button>
+        </div>
       </div>
     </div>`).join('')
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MI NEGOCIO — FAQS
+// MI NEGOCIO — FAQS  (DB-backed via ai_settings.faqs)
 // ═══════════════════════════════════════════════════════════════════
-const faqs = []
 function addFaq() {
-  const q = prompt('Pregunta frecuente:')
-  if (!q) return
-  const a = prompt('Respuesta:') || ''
-  faqs.push({ q, a })
+  const q = document.getElementById('faq-q')?.value.trim()
+  const a = document.getElementById('faq-a')?.value.trim()
+  if (!q) { toast('Escribí la pregunta primero', 'err'); return }
+  _faqs.push({ q, a: a || '' })
+  document.getElementById('faq-q').value = ''
+  document.getElementById('faq-a').value = ''
   renderFaqs()
 }
+
 function renderFaqs() {
   const el = document.getElementById('faqs-list')
-  if (!faqs.length) { el.innerHTML = '<div class="empty-state"><span class="empty-icon">❓</span><p>Agregá preguntas frecuentes.</p></div>'; return }
-  el.innerHTML = faqs.map((f, i) => `
+  if (!el) return
+  if (!_faqs.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px"><span class="empty-icon">❓</span><p>Agregá preguntas frecuentes.</p></div>'
+    return
+  }
+  el.innerHTML = _faqs.map((f, i) => `
     <div style="border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;overflow:hidden">
-      <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--bg2);cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
-        <span style="font-size:13px;font-weight:500">${esc(f.q)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();faqs.splice(${i},1);renderFaqs()">✕</button>
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--bg2)">
+        <span style="font-size:13px;font-weight:500;flex:1;cursor:pointer" onclick="toggleFaq(${i})" title="Ver respuesta">${esc(f.q)}</span>
+        <div style="display:flex;gap:4px;flex-shrink:0;margin-left:10px">
+          <button class="btn btn-ghost btn-sm" onclick="editFaq(${i})">Editar</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="_faqs.splice(${i},1);renderFaqs()">✕</button>
+        </div>
       </div>
-      <div style="padding:10px 14px;font-size:13px;color:var(--text2);display:none">${esc(f.a)}</div>
+      <div id="faq-body-${i}" style="padding:10px 14px;font-size:13px;color:var(--text2);display:none;border-top:1px solid var(--border)">${esc(f.a || '(sin respuesta)')}</div>
     </div>`).join('')
+}
+
+function toggleFaq(i) {
+  const el = document.getElementById('faq-body-' + i)
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'
+}
+
+function editFaq(i) {
+  const f = _faqs[i]
+  document.getElementById('faq-q').value = f.q
+  document.getElementById('faq-a').value = f.a || ''
+  _faqs.splice(i, 1)
+  renderFaqs()
+  document.getElementById('faq-q').focus()
+}
+
+async function saveFaqs() {
+  try {
+    const d = await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify({ faqs: _faqs }) })
+    if (d.ok) {
+      const ok = document.getElementById('faq-save-ok')
+      if (ok) { ok.style.display = 'inline'; setTimeout(() => ok.style.display = 'none', 3000) }
+      toast('FAQs guardadas')
+    } else toast('Error al guardar', 'err')
+  } catch { toast('Error de conexión', 'err') }
 }
 
 // ═══════════════════════════════════════════════════════════════════
