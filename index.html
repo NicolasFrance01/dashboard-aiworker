@@ -714,18 +714,6 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
 
-        <!-- Detalle del turno seleccionado -->
-        <div id="appt-detail-card" style="display:none;margin-top:16px" class="card">
-          <div class="card-hdr">
-            <h3 id="appt-detail-title">Turno</h3>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-ghost btn-sm" onclick="editAppt()">✏️ Editar</button>
-              <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteAppt()">🗑 Cancelar</button>
-              <button class="btn-icon" onclick="closeApptDetail()">✕</button>
-            </div>
-          </div>
-          <div class="card-body" id="appt-detail-body"></div>
-        </div>
       </div>
     </div>
 
@@ -2536,10 +2524,10 @@ function renderWeek(monday) {
     date.setDate(monday.getDate() + i)
     const ymd = toYMD(date)
     const isToday = date.getTime() === today.getTime()
-    const appts = _appointments.filter(a => a.appt_date === ymd || (a.appt_date && a.appt_date.startsWith(ymd)))
+    const appts = _appointments.filter(a => (a.appt_date || '').substring(0,10) === ymd)
     const apptHtml = appts.map(a =>
       `<div onclick="selectAppt(${a.id})" style="cursor:pointer;margin-top:4px;background:var(--accent);color:#fff;border-radius:4px;padding:3px 5px;font-size:10px;line-height:1.3">
-        ${a.time_start?.substring(0,5)} ${a.service.substring(0,14)}
+        ${(a.time_start || '').substring(0,5)} ${(a.service||'').substring(0,14)}
       </div>`
     ).join('')
     return `<div style="text-align:center;border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'};border-radius:var(--r-sm);padding:8px 4px;${isToday ? 'background:var(--accent-lt)' : ''}">
@@ -2567,8 +2555,8 @@ function renderMonth(firstDay) {
     const date = new Date(y, m, day)
     const ymd = toYMD(date)
     const isToday = date.getTime() === today.getTime()
-    const appts = _appointments.filter(a => a.appt_date === ymd || (a.appt_date && a.appt_date.startsWith(ymd)))
-    const dotHtml = appts.length ? `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">${appts.map(a => `<div onclick="selectAppt(${a.id})" title="${a.service}" style="cursor:pointer;background:var(--accent);border-radius:2px;padding:1px 3px;font-size:9px;color:#fff">${a.time_start?.substring(0,5)}</div>`).join('')}</div>` : ''
+    const appts = _appointments.filter(a => (a.appt_date || '').substring(0,10) === ymd)
+    const dotHtml = appts.length ? `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">${appts.map(a => `<div onclick="selectAppt(${a.id})" title="${a.service}" style="cursor:pointer;background:var(--accent);border-radius:2px;padding:1px 3px;font-size:9px;color:#fff">${(a.time_start||'').substring(0,5)}</div>`).join('')}</div>` : ''
     html += `<div style="min-height:56px;border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'};border-radius:var(--r-xs);padding:4px;${isToday ? 'background:var(--accent-lt)' : ''}">
       <div style="font-size:12px;font-weight:${isToday ? '700' : '400'};color:${isToday ? 'var(--accent)' : 'var(--text)'}">${day}</div>
       ${dotHtml}
@@ -3051,5 +3039,284 @@ setInterval(() => {
   loadStatus()
 }, 60000)
 </script>
+
+<!-- ═══ MODAL TURNO ═══ -->
+<div id="appt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center" onclick="if(event.target===this)closeApptModal()">
+  <div style="background:var(--bg);border-radius:var(--r);width:520px;max-width:96vw;max-height:88vh;overflow-y:auto;box-shadow:var(--sh-lg);display:flex;flex-direction:column">
+
+    <!-- Modo vista -->
+    <div id="appt-modal-view">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;position:sticky;top:0;background:var(--bg);z-index:1">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>
+        <h3 id="am-title" style="flex:1;font-size:15px;font-weight:700"></h3>
+        <span id="am-status-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600"></span>
+        <button class="btn-icon" onclick="closeApptModal()">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:4px">Fecha</div><div id="am-date" style="font-size:15px;font-weight:600"></div></div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:4px">Horario</div><div id="am-time" style="font-size:15px;font-weight:600"></div></div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:4px">Contacto</div><div id="am-contact" style="font-size:14px"></div></div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:4px">Agente</div><div id="am-agent" style="font-size:14px"></div></div>
+        </div>
+        <div id="am-notes-wrap" style="display:none">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:6px">Notas / Resumen</div>
+          <div id="am-notes" style="background:var(--bg2);border-radius:var(--r-sm);padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap"></div>
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteAppt()">🗑 Cancelar turno</button>
+        <button class="btn btn-primary btn-sm" onclick="switchApptToEdit()">✏️ Editar</button>
+      </div>
+    </div>
+
+    <!-- Modo edición -->
+    <div id="appt-modal-edit" style="display:none">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;position:sticky;top:0;background:var(--bg);z-index:1">
+        <h3 style="flex:1;font-size:15px;font-weight:700">✏️ Editar turno</h3>
+        <button class="btn-icon" onclick="closeApptModal()">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+        <div class="fg"><label>Servicio *</label><input id="ame-service" placeholder="Nombre del servicio"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>Fecha *</label><input type="date" id="ame-date"/></div>
+          <div class="fg"><label>Horario *</label><input type="time" id="ame-time"/></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg"><label>Duración (min)</label><input type="number" id="ame-duration" min="15" step="15"/></div>
+          <div class="fg"><label>Estado</label>
+            <select id="ame-status" style="border:1px solid var(--border);border-radius:var(--r-xs);padding:7px 10px;background:var(--bg);color:var(--text);font-size:13px;width:100%">
+              <option value="pendiente">Pendiente</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="completado">Completado</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label>Contacto</label><input id="ame-contact" placeholder="Nombre o teléfono"/></div>
+        <div class="fg"><label>Agente responsable</label><input id="ame-agent" placeholder="Nombre del asesor"/></div>
+        <div class="fg"><label>Notas / resumen</label><textarea id="ame-notes" rows="4" placeholder="Descripción, detalles de la reunión…" style="resize:vertical"></textarea></div>
+        <div id="ame-err" style="display:none;color:var(--danger);font-size:12px"></div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="switchApptToView()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveApptEdit()">Guardar cambios</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ EDY ASSISTANT ═══ -->
+<div id="edy-chat-panel" style="display:none;position:fixed;bottom:92px;right:24px;z-index:500;width:340px;height:480px;background:var(--bg);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden">
+  <div style="padding:14px 16px;background:var(--accent);display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <img src="./EDY.png" style="width:36px;height:36px;border-radius:50%;object-fit:cover;background:#fff"/>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:700;color:#fff">EDY</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.8)">Asistente del sistema</div>
+    </div>
+    <button onclick="toggleEdyChat()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px">✕</button>
+  </div>
+  <div id="edy-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0"></div>
+  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
+    <input id="edy-input" placeholder="Preguntale algo a EDY…" style="flex:1;border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:13px;outline:none;background:var(--bg)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendEdyMsg()}"/>
+    <button onclick="sendEdyMsg()" style="background:var(--accent);color:#fff;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">↑</button>
+  </div>
+</div>
+
+<button id="edy-btn" onclick="toggleEdyChat()" title="Hablá con EDY" style="position:fixed;bottom:24px;right:24px;z-index:501;width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;padding:0;box-shadow:0 4px 20px rgba(108,99,255,.5);transition:transform .2s;overflow:hidden" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">
+  <img src="./EDY.png" style="width:100%;height:100%;object-fit:cover"/>
+</button>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// APPT MODAL
+// ═══════════════════════════════════════════════════════════════════
+function apptDateStr(a) { return (a.appt_date || '').substring(0, 10) }
+
+function openApptModal(appt) {
+  _selectedAppt = appt
+  switchApptToView()
+  document.getElementById('appt-modal').style.display = 'flex'
+}
+
+function closeApptModal() {
+  document.getElementById('appt-modal').style.display = 'none'
+  _selectedAppt = null
+}
+
+function switchApptToView() {
+  const a = _selectedAppt
+  if (!a) return
+  document.getElementById('appt-modal-view').style.display = 'block'
+  document.getElementById('appt-modal-edit').style.display = 'none'
+  document.getElementById('am-title').textContent = a.service
+  const dateStr = apptDateStr(a)
+  document.getElementById('am-date').textContent = dateStr ? new Date(dateStr + 'T12:00:00').toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) : '—'
+  document.getElementById('am-time').textContent = `${(a.time_start || '').substring(0,5)} (${a.duration || 60}min)`
+  document.getElementById('am-contact').textContent = a.contact_name || a.contact_phone || a.contact_note || '—'
+  document.getElementById('am-agent').textContent = a.agent_name || '—'
+  const statusColors = { pendiente: '#d97706', confirmado: '#16a34a', completado: '#6c63ff', cancelado: '#dc2626' }
+  const badge = document.getElementById('am-status-badge')
+  badge.textContent = (a.status || 'pendiente').charAt(0).toUpperCase() + (a.status || 'pendiente').slice(1)
+  badge.style.background = (statusColors[a.status] || '#d97706') + '22'
+  badge.style.color = statusColors[a.status] || '#d97706'
+  const notesWrap = document.getElementById('am-notes-wrap')
+  if (a.notes) { notesWrap.style.display = 'block'; document.getElementById('am-notes').textContent = a.notes }
+  else { notesWrap.style.display = 'none' }
+}
+
+function switchApptToEdit() {
+  const a = _selectedAppt
+  if (!a) return
+  document.getElementById('appt-modal-view').style.display = 'none'
+  document.getElementById('appt-modal-edit').style.display = 'block'
+  document.getElementById('ame-service').value  = a.service || ''
+  document.getElementById('ame-date').value     = apptDateStr(a)
+  document.getElementById('ame-time').value     = (a.time_start || '').substring(0,5)
+  document.getElementById('ame-duration').value = a.duration || 60
+  document.getElementById('ame-status').value   = a.status || 'pendiente'
+  document.getElementById('ame-contact').value  = a.contact_name || a.contact_phone || a.contact_note || ''
+  document.getElementById('ame-agent').value    = a.agent_name || ''
+  document.getElementById('ame-notes').value    = a.notes || ''
+  document.getElementById('ame-err').style.display = 'none'
+}
+
+async function saveApptEdit() {
+  const errEl = document.getElementById('ame-err')
+  errEl.style.display = 'none'
+  const service = document.getElementById('ame-service').value.trim()
+  const date    = document.getElementById('ame-date').value
+  const time    = document.getElementById('ame-time').value
+  if (!service || !date || !time) { errEl.textContent = 'Completá servicio, fecha y horario'; errEl.style.display = 'block'; return }
+  const body = {
+    service,
+    appt_date:  date,
+    time_start: time,
+    duration:   parseInt(document.getElementById('ame-duration').value) || 60,
+    status:     document.getElementById('ame-status').value,
+    agent_name: document.getElementById('ame-agent').value.trim() || null,
+    notes:      document.getElementById('ame-notes').value.trim() || null,
+    contact_note: document.getElementById('ame-contact').value.trim() || null,
+  }
+  try {
+    const d = await apiFetch(`/api/appointments/${_selectedAppt.id}`, { method: 'PUT', body: JSON.stringify(body) })
+    if (d.ok || d.appointment) {
+      toast('Turno actualizado')
+      Object.assign(_selectedAppt, d.appointment || body)
+      switchApptToView()
+      await loadAppointments()
+    } else { errEl.textContent = d.error || 'Error al guardar'; errEl.style.display = 'block' }
+  } catch { errEl.textContent = 'Error de conexión'; errEl.style.display = 'block' }
+}
+
+// Override selectAppt to use modal
+function selectAppt(id) {
+  const appt = _appointments.find(a => a.id === id)
+  if (appt) openApptModal(appt)
+}
+
+// Override closeApptDetail to use modal
+function closeApptDetail() { closeApptModal() }
+
+// Override editAppt/deleteAppt
+function editAppt() { switchApptToEdit() }
+
+async function deleteAppt() {
+  if (!_selectedAppt) return
+  if (!confirm(`¿Cancelar el turno "${_selectedAppt.service}"?\nEsta acción lo marcará como cancelado.`)) return
+  try {
+    await apiFetch(`/api/appointments/${_selectedAppt.id}`, { method: 'DELETE' })
+    toast('Turno cancelado')
+    closeApptModal()
+    await loadAppointments()
+  } catch { toast('Error al cancelar', 'err') }
+}
+
+// Fix date comparison for calendar rendering
+const _origRenderWeek = renderWeek
+const _origRenderMonth = renderMonth
+// Patch date filter globally
+function apptsByDate(ymd) {
+  return _appointments.filter(a => apptDateStr(a) === ymd)
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EDY ASSISTANT
+// ═══════════════════════════════════════════════════════════════════
+let _edyChatOpen = false
+let _edyHistory = []
+let _edyLoading = false
+
+function toggleEdyChat() {
+  _edyChatOpen = !_edyChatOpen
+  const panel = document.getElementById('edy-chat-panel')
+  panel.style.display = _edyChatOpen ? 'flex' : 'none'
+  if (_edyChatOpen && _edyHistory.length === 0) {
+    addEdyMsg('bot', '¡Hola! Soy EDY, tu asistente de sistema 👷\n\nPuedo ayudarte a:\n• Navegar el dashboard\n• Resolver problemas técnicos\n• Explicar cómo funciona cada módulo\n\n¿En qué te ayudo?')
+    setTimeout(() => document.getElementById('edy-input').focus(), 100)
+  }
+}
+
+function addEdyMsg(role, text) {
+  const isBot = role === 'bot'
+  const msgs = document.getElementById('edy-messages')
+  const div = document.createElement('div')
+  div.style.cssText = `display:flex;align-items:flex-end;gap:8px;${isBot ? '' : 'flex-direction:row-reverse'}`
+  div.innerHTML = `
+    ${isBot ? `<img src="./EDY.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0"/>` : ''}
+    <div style="max-width:82%;background:${isBot ? 'var(--bg2)' : 'var(--accent)'};color:${isBot ? 'var(--text)' : '#fff'};border-radius:${isBot ? '4px 14px 14px 14px' : '14px 4px 14px 14px'};padding:9px 12px;font-size:13px;line-height:1.5;white-space:pre-wrap">${text.replace(/</g,'&lt;').replace(/https?:\/\/\S+/g, u => `<a href="${u}" target="_blank" style="color:${isBot?'var(--accent)':'#cce'};text-decoration:underline">${u}</a>`)}</div>
+  `
+  msgs.appendChild(div)
+  msgs.scrollTop = msgs.scrollHeight
+  _edyHistory.push({ role: isBot ? 'assistant' : 'user', text })
+}
+
+function addEdyTyping() {
+  const msgs = document.getElementById('edy-messages')
+  const div = document.createElement('div')
+  div.id = 'edy-typing'
+  div.style.cssText = 'display:flex;align-items:flex-end;gap:8px'
+  div.innerHTML = `<img src="./EDY.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0"/>
+    <div style="background:var(--bg2);border-radius:4px 14px 14px 14px;padding:10px 14px;font-size:20px;line-height:1">
+      <span style="animation:edyDot 1.2s infinite .0s">·</span><span style="animation:edyDot 1.2s infinite .4s">·</span><span style="animation:edyDot 1.2s infinite .8s">·</span>
+    </div>`
+  msgs.appendChild(div)
+  msgs.scrollTop = msgs.scrollHeight
+}
+
+function removeEdyTyping() {
+  const el = document.getElementById('edy-typing')
+  if (el) el.remove()
+}
+
+async function sendEdyMsg() {
+  if (_edyLoading) return
+  const input = document.getElementById('edy-input')
+  const text = input.value.trim()
+  if (!text) return
+  input.value = ''
+  addEdyMsg('user', text)
+  _edyLoading = true
+  addEdyTyping()
+  try {
+    const history = _edyHistory.slice(-8).map(m => ({ role: m.role, content: m.text }))
+    const d = await apiFetch('/api/assistant', {
+      method: 'POST',
+      body: JSON.stringify({ message: text, history })
+    })
+    removeEdyTyping()
+    if (d.reply) addEdyMsg('bot', d.reply)
+    else addEdyMsg('bot', 'Tuve un problema técnico. Intentá de nuevo.')
+  } catch {
+    removeEdyTyping()
+    addEdyMsg('bot', 'No puedo conectarme al servidor ahora mismo.\n\nSi el problema persiste, contactá al AI Engineer:\nhttps://wa.me/5493516002716')
+  } finally { _edyLoading = false }
+}
+</script>
+<style>
+@keyframes edyDot { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+#edy-chat-panel { display: none; flex-direction: column; }
+#edy-chat-panel.open { display: flex; }
+</style>
 </body>
 </html>
