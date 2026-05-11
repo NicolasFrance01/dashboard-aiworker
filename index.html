@@ -1462,6 +1462,37 @@ function setFilter(f, btn) {
 // Human-in-the-loop state
 const hilState = {}
 
+function buildMsgHtml(m) {
+  const isAI = m.sender === 'ai'
+  const isHuman = m.sender === 'human'
+  const agentMeta = (isAI || isHuman)
+    ? (isHuman ? { icon: '🧑', label: 'Operador', cls: 'at-generalista' } : agentLabel(m.agent_type))
+    : { icon: '👤', label: 'Cliente', cls: 'at-cliente' }
+  return `<div class="bubble-wrap ${m.sender === 'client' ? 'client' : 'ai'}" data-msg-id="${m.id}">
+    <div class="bubble-av" title="${agentMeta.label}">${agentMeta.icon}</div>
+    <div>
+      <div class="bubble">${esc(m.content || '')}</div>
+      <div class="bubble-meta">${fmtDateTime(m.created_at)}<span class="audit-tag ${agentMeta.cls}">${agentMeta.label}</span></div>
+    </div>
+  </div>`
+}
+
+async function refreshConvMessages(id) {
+  const area = document.getElementById('msgs-area')
+  if (!area || activeConvId !== id) return
+  try {
+    const d = await apiFetch(`/api/conversations/${id}/messages`)
+    const msgs = d.messages || []
+    if (!msgs.length) { area.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">Sin mensajes</div>'; return }
+    const lastRendered = area.lastElementChild?.dataset?.msgId
+    const lastFetched  = String(msgs[msgs.length - 1].id)
+    if (lastRendered === lastFetched) return   // nada nuevo
+    const scrolledToBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 80
+    area.innerHTML = msgs.map(buildMsgHtml).join('')
+    if (scrolledToBottom) area.scrollTop = area.scrollHeight
+  } catch {}
+}
+
 async function openConv(id, name, phone) {
   activeConvId = id
   startConvPolling(id)
@@ -1469,7 +1500,6 @@ async function openConv(id, name, phone) {
   const area = document.getElementById('chat-area')
   area.innerHTML = `<div class="chat-header"><div class="conv-av" style="width:36px;height:36px;font-size:14px">${(name||'?')[0].toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(name)}</div><div style="font-size:11px;color:var(--text2)">${phone}</div></div><span class="badge ${hilState[id] ? 'badge-blue' : 'badge-green'}">${hilState[id] ? '🧑 Agente humano' : '🤖 Bot activo'}</span></div><div class="chat-msgs" id="msgs-area"><div style="text-align:center;color:var(--text2);padding:20px">Cargando…</div></div><div class="chat-input-area" id="chat-input-zone"></div>`
   renderInputZone(id)
-  // Contact detail
   const cv = allConvs.find(c => c.id === id) || {}
   document.getElementById('contact-detail').innerHTML = `
     <div class="contact-panel">
@@ -1487,27 +1517,7 @@ async function openConv(id, name, phone) {
       <div class="fg"><label>Notas del contacto</label><textarea rows="3" placeholder="Anotá info relevante del cliente…" style="width:100%"></textarea></div>
       <div style="margin-top:10px"><label class="fg" style="display:block;margin-bottom:6px"><span style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Tags</span></label><div style="display:flex;flex-wrap:wrap;gap:4px"><span class="chip">cliente</span><span class="chip">+ tag</span></div></div>
     </div>`
-  try {
-    const d = await apiFetch(`/api/conversations/${id}/messages`)
-    const msgs = d.messages || []
-    const area2 = document.getElementById('msgs-area')
-    if (!msgs.length) { area2.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">Sin mensajes</div>'; return }
-    area2.innerHTML = msgs.map(m => {
-      const isAI = m.sender === 'ai'
-      const agentMeta = isAI ? agentLabel(m.agent_type) : { icon: '👤', label: 'Cliente', cls: 'at-cliente' }
-      return `<div class="bubble-wrap ${m.sender}">
-        <div class="bubble-av" title="${agentMeta.label}">${agentMeta.icon}</div>
-        <div>
-          <div class="bubble">${esc(m.content || '')}</div>
-          <div class="bubble-meta">
-            ${fmtDateTime(m.created_at)}
-            <span class="audit-tag ${agentMeta.cls}">${agentMeta.label}</span>
-          </div>
-        </div>
-      </div>`
-    }).join('')
-    setTimeout(() => { const a = document.getElementById('msgs-area'); if (a) a.scrollTop = a.scrollHeight }, 50)
-  } catch {}
+  await refreshConvMessages(id)
 }
 
 function renderInputZone(id) {
@@ -1536,34 +1546,11 @@ function stopConvPolling() {
 
 function startConvPolling(id) {
   stopConvPolling()
-  _convPollInterval = setInterval(async () => {
+  // Fallback poll cada 3s — el SSE ya dispara al instante cuando llega un mensaje
+  _convPollInterval = setInterval(() => {
     if (activeConvId !== id) { stopConvPolling(); return }
-    try {
-      const d = await apiFetch(`/api/conversations/${id}/messages`)
-      const msgs = d.messages || []
-      const area = document.getElementById('msgs-area')
-      if (!area || !msgs.length) return
-      const currentCount = area.querySelectorAll('.bubble-wrap').length
-      if (msgs.length === currentCount) return
-      // Render new messages
-      const scrolledToBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 60
-      area.innerHTML = msgs.map(m => {
-        const isAI = m.sender === 'ai'
-        const isHuman = m.sender === 'human'
-        const agentMeta = (isAI || isHuman)
-          ? (isHuman ? { icon: '🧑', label: 'Operador', cls: 'at-generalista' } : agentLabel(m.agent_type))
-          : { icon: '👤', label: 'Cliente', cls: 'at-cliente' }
-        return `<div class="bubble-wrap ${m.sender === 'client' ? 'client' : 'ai'}">
-          <div class="bubble-av" title="${agentMeta.label}">${agentMeta.icon}</div>
-          <div>
-            <div class="bubble">${esc(m.content || '')}</div>
-            <div class="bubble-meta">${fmtDateTime(m.created_at)}<span class="audit-tag ${agentMeta.cls}">${agentMeta.label}</span></div>
-          </div>
-        </div>`
-      }).join('')
-      if (scrolledToBottom) setTimeout(() => { area.scrollTop = area.scrollHeight }, 50)
-    } catch {}
-  }, 4000)
+    refreshConvMessages(id)
+  }, 3000)
 }
 
 async function sendManual(id) {
@@ -1575,21 +1562,10 @@ async function sendManual(id) {
     const d = await apiFetch(`/api/conversations/${id}/send`, { method: 'POST', body: JSON.stringify({ message: msg }) })
     if (d.ok) {
       input.value = ''
-      // Refresh messages immediately
-      const d2 = await apiFetch(`/api/conversations/${id}/messages`)
-      const msgs = d2.messages || []
+      // Force immediate refresh (bypass last-id cache)
       const area = document.getElementById('msgs-area')
-      if (area && msgs.length) {
-        area.innerHTML = msgs.map(m => {
-          const isHuman = m.sender === 'human'
-          const agentMeta = isHuman ? { icon: '🧑', label: 'Operador', cls: 'at-generalista' } : (m.sender === 'ai' ? agentLabel(m.agent_type) : { icon: '👤', label: 'Cliente', cls: 'at-cliente' })
-          return `<div class="bubble-wrap ${m.sender === 'client' ? 'client' : 'ai'}">
-            <div class="bubble-av">${agentMeta.icon}</div>
-            <div><div class="bubble">${esc(m.content || '')}</div><div class="bubble-meta">${fmtDateTime(m.created_at)}<span class="audit-tag ${agentMeta.cls}">${agentMeta.label}</span></div></div>
-          </div>`
-        }).join('')
-        setTimeout(() => { area.scrollTop = area.scrollHeight }, 50)
-      }
+      if (area) area.lastElementChild?.removeAttribute('data-msg-id')
+      await refreshConvMessages(id)
     } else toast(d.error || 'Error al enviar', 'err')
   } catch { toast('Error de conexión', 'err') }
   finally { if (input) input.disabled = false; input?.focus() }
@@ -1600,7 +1576,7 @@ async function sendManual(id) {
 // ═══════════════════════════════════════════════════════════════════
 const NATIVE_AGENTS = [
   {
-    type: 'generalista', emoji: '🤖', name: 'Ediluz · General',
+    type: 'generalista', emoji: '🤖', name: 'EDY · General',
     badge: { cls: 'badge-gray', label: 'Generalista' },
     badgeCls: 'at-generalista',
     desc: 'Primer punto de contacto. Responde saludos y consultas generales, y orienta al cliente hacia el agente correcto.',
@@ -2789,10 +2765,13 @@ function connectNotifStream() {
       _allNotifs.unshift(n)
       updateNotifBadge(_allNotifs.filter(x => !x.read).length)
       renderNotifications()
-      // Toast for important types
-      if (['new_contact','handoff','missing_image'].includes(n.type)) {
-        toast(n.title)
+      if (['new_contact','handoff','missing_image'].includes(n.type)) toast(n.title)
+      // Actualización instantánea de conversación abierta
+      if (activeConvId && n.data?.convId === activeConvId) {
+        refreshConvMessages(activeConvId)
       }
+      // Si hay nueva conversación, actualizar la lista también
+      if (['new_contact','conv_active'].includes(n.type)) loadConvsPanel()
     } catch {}
   }
   notifSseSource.onerror = () => {
