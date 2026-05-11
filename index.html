@@ -671,28 +671,60 @@ tr:hover td{background:var(--bg2)}
       </div>
 
       <div class="biz-panel" id="biz-turnos">
-        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px">
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+          <!-- Calendario -->
           <div class="card">
-            <div class="card-hdr"><h3>📅 Agenda semanal</h3>
-              <button class="btn btn-ghost btn-sm" onclick="">← semana</button>
-              <span id="week-label" style="font-size:13px;font-weight:600;padding:0 8px">Esta semana</span>
-              <button class="btn btn-ghost btn-sm" onclick="">semana →</button>
+            <div class="card-hdr" style="flex-wrap:wrap;gap:8px">
+              <h3>📅 Agenda</h3>
+              <div style="display:flex;align-items:center;gap:6px;flex:1">
+                <button class="btn btn-ghost btn-sm" onclick="calNav(-1)">←</button>
+                <span id="cal-label" style="font-size:13px;font-weight:600;padding:0 6px;min-width:140px;text-align:center">—</span>
+                <button class="btn btn-ghost btn-sm" onclick="calNav(1)">→</button>
+                <button class="btn btn-ghost btn-sm" onclick="calGoToday()">Hoy</button>
+              </div>
+              <div style="display:flex;gap:4px">
+                <button class="btn btn-ghost btn-sm" id="cal-view-semana" onclick="setCalView('semana')" style="font-weight:700">Semana</button>
+                <button class="btn btn-ghost btn-sm" id="cal-view-mes" onclick="setCalView('mes')">Mes</button>
+              </div>
             </div>
-            <div class="card-body">
-              <div id="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-height:200px"></div>
+            <div class="card-body" style="padding:0">
+              <div id="calendar-grid" style="min-height:200px"></div>
             </div>
           </div>
+          <!-- Formulario nuevo turno -->
           <div class="card">
-            <div class="card-hdr"><h3>➕ Nuevo turno</h3></div>
-            <div class="card-body">
-              <div class="fg" style="margin-bottom:10px"><label>Servicio</label><input placeholder="Nombre del servicio"/></div>
-              <div class="fg" style="margin-bottom:10px"><label>Fecha</label><input type="date"/></div>
-              <div class="fg" style="margin-bottom:10px"><label>Horario inicio</label><input type="time"/></div>
-              <div class="fg" style="margin-bottom:10px"><label>Duración (min)</label><input type="number" placeholder="60" value="60"/></div>
-              <div class="fg" style="margin-bottom:14px"><label>Capacidad</label><input type="number" placeholder="1" value="1"/></div>
-              <button class="btn btn-primary" style="width:100%;justify-content:center">Crear turno</button>
+            <div class="card-hdr"><h3 id="appt-form-title">➕ Nuevo turno</h3></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+              <input type="hidden" id="appt-edit-id"/>
+              <div class="fg"><label>Servicio *</label><input id="appt-service" placeholder="Ej: Visita técnica reforma"/></div>
+              <div class="fg"><label>Fecha *</label><input type="date" id="appt-date"/></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="fg"><label>Horario inicio *</label><input type="time" id="appt-time"/></div>
+                <div class="fg"><label>Duración (min)</label><input type="number" id="appt-duration" value="60" min="15" step="15"/></div>
+              </div>
+              <div class="fg"><label>Contacto</label><input id="appt-contact" placeholder="Nombre o teléfono"/></div>
+              <div class="fg"><label>Agente responsable</label><input id="appt-agent" placeholder="Nombre del asesor"/></div>
+              <div class="fg"><label>Notas / resumen</label><textarea id="appt-notes" rows="3" placeholder="Descripción del turno, qué consultó el cliente…" style="resize:vertical"></textarea></div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveAppointment()">Guardar turno</button>
+                <button class="btn btn-ghost" id="appt-cancel-btn" style="display:none" onclick="cancelApptEdit()">Cancelar</button>
+              </div>
+              <div id="appt-form-err" style="display:none;color:var(--danger);font-size:12px"></div>
             </div>
           </div>
+        </div>
+
+        <!-- Detalle del turno seleccionado -->
+        <div id="appt-detail-card" style="display:none;margin-top:16px" class="card">
+          <div class="card-hdr">
+            <h3 id="appt-detail-title">Turno</h3>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" onclick="editAppt()">✏️ Editar</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteAppt()">🗑 Cancelar</button>
+              <button class="btn-icon" onclick="closeApptDetail()">✕</button>
+            </div>
+          </div>
+          <div class="card-body" id="appt-detail-body"></div>
         </div>
       </div>
     </div>
@@ -1265,6 +1297,7 @@ function bizTab(id, btn) {
   document.querySelectorAll('.biz-panel').forEach(p => p.classList.remove('active'))
   btn.classList.add('active')
   document.getElementById('biz-' + id).classList.add('active')
+  if (id === 'turnos') initCalendar()
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2430,23 +2463,226 @@ async function saveFaqs() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MI NEGOCIO — CALENDAR
+// TURNOS / AGENDA
 // ═══════════════════════════════════════════════════════════════════
-function initCalendar() {
-  const grid = document.getElementById('calendar-grid')
+let _calView = 'semana'   // 'semana' | 'mes'
+let _calOffset = 0        // semanas o meses respecto a hoy
+let _appointments = []
+let _selectedAppt = null
+
+function setCalView(v) {
+  _calView = v
+  _calOffset = 0
+  document.getElementById('cal-view-semana').style.fontWeight = v === 'semana' ? '700' : '400'
+  document.getElementById('cal-view-mes').style.fontWeight   = v === 'mes'    ? '700' : '400'
+  renderCalendar()
+}
+
+function calNav(dir) { _calOffset += dir; renderCalendar() }
+function calGoToday() { _calOffset = 0; renderCalendar() }
+
+function getCalRange() {
   const today = new Date()
-  const startOfWeek = new Date(today)
-  startOfWeek.setDate(today.getDate() - today.getDay() + 1)
-  grid.innerHTML = DAYS.map((d, i) => {
-    const date = new Date(startOfWeek)
-    date.setDate(startOfWeek.getDate() + i)
-    const isToday = date.toDateString() === today.toDateString()
-    return `<div style="text-align:center;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 4px;${isToday ? 'background:var(--accent-lt);border-color:var(--accent)' : ''}">
-      <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">${d.substring(0,3)}</div>
-      <div style="font-size:18px;font-weight:700;margin:4px 0;${isToday ? 'color:var(--accent)' : ''}">${date.getDate()}</div>
-      <div style="font-size:10px;color:var(--text3)">Sin turnos</div>
+  if (_calView === 'semana') {
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + _calOffset * 7)
+    monday.setHours(0,0,0,0)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    return { start: monday, end: sunday }
+  } else {
+    const d = new Date(today.getFullYear(), today.getMonth() + _calOffset, 1)
+    const start = new Date(d.getFullYear(), d.getMonth(), 1)
+    const end   = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    return { start, end }
+  }
+}
+
+function toYMD(d) { return d.toISOString().split('T')[0] }
+
+async function loadAppointments() {
+  try {
+    const { start, end } = getCalRange()
+    const d = await apiFetch(`/api/appointments?from=${toYMD(start)}&to=${toYMD(end)}`)
+    _appointments = d.appointments || []
+    renderCalendar()
+  } catch { renderCalendar() }
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid')
+  const label = document.getElementById('cal-label')
+  const { start, end } = getCalRange()
+
+  const fmt = (d) => d.toLocaleDateString('es-AR', { day:'numeric', month:'short' })
+  label.textContent = _calView === 'semana'
+    ? `${fmt(start)} — ${fmt(end)}`
+    : start.toLocaleDateString('es-AR', { month:'long', year:'numeric' })
+
+  if (_calView === 'semana') renderWeek(start)
+  else renderMonth(start)
+}
+
+function renderWeek(monday) {
+  const grid = document.getElementById('calendar-grid')
+  const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
+  const today = new Date(); today.setHours(0,0,0,0)
+  grid.style.display = 'grid'
+  grid.style.gridTemplateColumns = 'repeat(7,1fr)'
+  grid.style.gap = '8px'
+  grid.style.padding = '12px'
+  grid.innerHTML = days.map((d, i) => {
+    const date = new Date(monday)
+    date.setDate(monday.getDate() + i)
+    const ymd = toYMD(date)
+    const isToday = date.getTime() === today.getTime()
+    const appts = _appointments.filter(a => a.appt_date === ymd || (a.appt_date && a.appt_date.startsWith(ymd)))
+    const apptHtml = appts.map(a =>
+      `<div onclick="selectAppt(${a.id})" style="cursor:pointer;margin-top:4px;background:var(--accent);color:#fff;border-radius:4px;padding:3px 5px;font-size:10px;line-height:1.3">
+        ${a.time_start?.substring(0,5)} ${a.service.substring(0,14)}
+      </div>`
+    ).join('')
+    return `<div style="text-align:center;border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'};border-radius:var(--r-sm);padding:8px 4px;${isToday ? 'background:var(--accent-lt)' : ''}">
+      <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">${d}</div>
+      <div style="font-size:18px;font-weight:700;margin:2px 0;${isToday ? 'color:var(--accent)' : ''}">${date.getDate()}</div>
+      ${apptHtml || `<div style="font-size:10px;color:var(--text3)">–</div>`}
     </div>`
   }).join('')
+}
+
+function renderMonth(firstDay) {
+  const grid = document.getElementById('calendar-grid')
+  grid.style.display = 'block'
+  grid.style.padding = '12px'
+  const today = new Date(); today.setHours(0,0,0,0)
+  const y = firstDay.getFullYear(), m = firstDay.getMonth()
+  const lastDay = new Date(y, m+1, 0)
+  const startDow = (firstDay.getDay() + 6) % 7  // 0=Mon
+  const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
+  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px">`
+  html += days.map(d => `<div style="text-align:center;font-size:10px;font-weight:600;color:var(--text2);padding:4px">${d}</div>`).join('')
+  html += `</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">`
+  for (let i = 0; i < startDow; i++) html += `<div></div>`
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const date = new Date(y, m, day)
+    const ymd = toYMD(date)
+    const isToday = date.getTime() === today.getTime()
+    const appts = _appointments.filter(a => a.appt_date === ymd || (a.appt_date && a.appt_date.startsWith(ymd)))
+    const dotHtml = appts.length ? `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">${appts.map(a => `<div onclick="selectAppt(${a.id})" title="${a.service}" style="cursor:pointer;background:var(--accent);border-radius:2px;padding:1px 3px;font-size:9px;color:#fff">${a.time_start?.substring(0,5)}</div>`).join('')}</div>` : ''
+    html += `<div style="min-height:56px;border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'};border-radius:var(--r-xs);padding:4px;${isToday ? 'background:var(--accent-lt)' : ''}">
+      <div style="font-size:12px;font-weight:${isToday ? '700' : '400'};color:${isToday ? 'var(--accent)' : 'var(--text)'}">${day}</div>
+      ${dotHtml}
+    </div>`
+  }
+  html += `</div>`
+  grid.innerHTML = html
+}
+
+function selectAppt(id) {
+  _selectedAppt = _appointments.find(a => a.id === id)
+  if (!_selectedAppt) return
+  const card = document.getElementById('appt-detail-card')
+  card.style.display = 'block'
+  document.getElementById('appt-detail-title').textContent = _selectedAppt.service
+  document.getElementById('appt-detail-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><div style="font-size:11px;color:var(--text2)">Fecha</div><div style="font-weight:600">${_selectedAppt.appt_date}</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Horario</div><div style="font-weight:600">${_selectedAppt.time_start?.substring(0,5)} (${_selectedAppt.duration}min)</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Contacto</div><div style="font-weight:600">${_selectedAppt.contact_name || _selectedAppt.contact_phone || '—'}</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Agente</div><div style="font-weight:600">${_selectedAppt.agent_name || '—'}</div></div>
+    </div>
+    ${_selectedAppt.notes ? `<div style="margin-top:12px;padding:10px;background:var(--bg2);border-radius:var(--r-sm);font-size:13px">${_selectedAppt.notes}</div>` : ''}
+  `
+}
+
+function closeApptDetail() {
+  document.getElementById('appt-detail-card').style.display = 'none'
+  _selectedAppt = null
+}
+
+function editAppt() {
+  if (!_selectedAppt) return
+  document.getElementById('appt-edit-id').value = _selectedAppt.id
+  document.getElementById('appt-form-title').textContent = '✏️ Editar turno'
+  document.getElementById('appt-service').value  = _selectedAppt.service || ''
+  document.getElementById('appt-date').value     = _selectedAppt.appt_date || ''
+  document.getElementById('appt-time').value     = _selectedAppt.time_start?.substring(0,5) || ''
+  document.getElementById('appt-duration').value = _selectedAppt.duration || 60
+  document.getElementById('appt-contact').value  = _selectedAppt.contact_name || _selectedAppt.contact_phone || ''
+  document.getElementById('appt-agent').value    = _selectedAppt.agent_name || ''
+  document.getElementById('appt-notes').value    = _selectedAppt.notes || ''
+  document.getElementById('appt-cancel-btn').style.display = 'inline-flex'
+  document.getElementById('appt-detail-card').style.display = 'none'
+}
+
+function cancelApptEdit() {
+  document.getElementById('appt-edit-id').value  = ''
+  document.getElementById('appt-form-title').textContent = '➕ Nuevo turno'
+  document.getElementById('appt-service').value  = ''
+  document.getElementById('appt-date').value     = ''
+  document.getElementById('appt-time').value     = ''
+  document.getElementById('appt-duration').value = '60'
+  document.getElementById('appt-contact').value  = ''
+  document.getElementById('appt-agent').value    = ''
+  document.getElementById('appt-notes').value    = ''
+  document.getElementById('appt-cancel-btn').style.display = 'none'
+  document.getElementById('appt-form-title').textContent = '➕ Nuevo turno'
+}
+
+async function saveAppointment() {
+  const errEl = document.getElementById('appt-form-err')
+  errEl.style.display = 'none'
+  const service  = document.getElementById('appt-service').value.trim()
+  const apptDate = document.getElementById('appt-date').value
+  const timeStart = document.getElementById('appt-time').value
+  const duration  = parseInt(document.getElementById('appt-duration').value) || 60
+  const contact   = document.getElementById('appt-contact').value.trim()
+  const agent     = document.getElementById('appt-agent').value.trim() || currentUser?.name || currentUser?.username
+  const notes     = document.getElementById('appt-notes').value.trim()
+  const editId    = document.getElementById('appt-edit-id').value
+
+  if (!service || !apptDate || !timeStart) {
+    errEl.textContent = 'Completá servicio, fecha y horario'
+    errEl.style.display = 'block'
+    return
+  }
+
+  const body = { service, appt_date: apptDate, time_start: timeStart, duration, agent_name: agent, notes: notes || null }
+  if (contact) body.contact_note = contact
+
+  try {
+    let d
+    if (editId) {
+      d = await apiFetch(`/api/appointments/${editId}`, { method: 'PUT', body: JSON.stringify(body) })
+    } else {
+      d = await apiFetch('/api/appointments', { method: 'POST', body: JSON.stringify(body) })
+    }
+    if (d.ok || d.appointment) {
+      toast(editId ? 'Turno actualizado' : 'Turno creado y notificado al asesor')
+      cancelApptEdit()
+      await loadAppointments()
+    } else { errEl.textContent = d.error || 'Error al guardar'; errEl.style.display = 'block' }
+  } catch { errEl.textContent = 'Error de conexión'; errEl.style.display = 'block' }
+}
+
+async function deleteAppt() {
+  if (!_selectedAppt) return
+  if (!confirm(`¿Cancelar el turno "${_selectedAppt.service}" del ${_selectedAppt.appt_date}?`)) return
+  try {
+    await apiFetch(`/api/appointments/${_selectedAppt.id}`, { method: 'DELETE' })
+    toast('Turno cancelado')
+    closeApptDetail()
+    await loadAppointments()
+  } catch { toast('Error al cancelar', 'err') }
+}
+
+function initCalendar() {
+  const today = new Date()
+  const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), day = String(today.getDate()).padStart(2,'0')
+  document.getElementById('appt-date').value = `${y}-${m}-${day}`
+  document.getElementById('appt-time').value = '09:00'
+  if (currentUser) document.getElementById('appt-agent').value = currentUser.name || currentUser.username || ''
+  loadAppointments()
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2461,6 +2697,7 @@ const NOTIF_META = {
   recontacto:    { icon: '🔄', bg: 'var(--bg3)',        color: 'var(--text2)',      label: 'Recontacto' },
   human_msg:     { icon: '🧑', bg: 'var(--info-lt)',    color: '#1d4ed8',           label: 'Mensaje manual' },
   human_takeover:{ icon: '🎛️', bg: 'var(--warn-lt)',  color: '#b45309',           label: 'Toma de control' },
+  turno:         { icon: '📅', bg: '#d1fae5',           color: '#065f46',           label: 'Turno agendado' },
 }
 
 let _notifFilter = 'all'
