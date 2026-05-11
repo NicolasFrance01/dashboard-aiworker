@@ -2511,6 +2511,12 @@ function renderCalendar() {
   else renderMonth(start)
 }
 
+function apptStatusColor(status) {
+  if (status === 'confirmado') return '#16a34a'
+  if (status === 'completado') return '#0ea5e9'
+  return '#f97316'  // pendiente o default
+}
+
 function renderWeek(monday) {
   const grid = document.getElementById('calendar-grid')
   const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
@@ -2526,7 +2532,7 @@ function renderWeek(monday) {
     const isToday = date.getTime() === today.getTime()
     const appts = _appointments.filter(a => (a.appt_date || '').substring(0,10) === ymd)
     const apptHtml = appts.map(a =>
-      `<div onclick="selectAppt(${a.id})" style="cursor:pointer;margin-top:4px;background:var(--accent);color:#fff;border-radius:4px;padding:3px 5px;font-size:10px;line-height:1.3">
+      `<div onclick="selectAppt(${a.id})" style="cursor:pointer;margin-top:4px;background:${apptStatusColor(a.status)};color:#fff;border-radius:4px;padding:3px 5px;font-size:10px;line-height:1.3">
         ${(a.time_start || '').substring(0,5)} ${(a.service||'').substring(0,14)}
       </div>`
     ).join('')
@@ -2556,7 +2562,7 @@ function renderMonth(firstDay) {
     const ymd = toYMD(date)
     const isToday = date.getTime() === today.getTime()
     const appts = _appointments.filter(a => (a.appt_date || '').substring(0,10) === ymd)
-    const dotHtml = appts.length ? `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">${appts.map(a => `<div onclick="selectAppt(${a.id})" title="${a.service}" style="cursor:pointer;background:var(--accent);border-radius:2px;padding:1px 3px;font-size:9px;color:#fff">${(a.time_start||'').substring(0,5)}</div>`).join('')}</div>` : ''
+    const dotHtml = appts.length ? `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">${appts.map(a => `<div onclick="selectAppt(${a.id})" title="${a.service}" style="cursor:pointer;background:${apptStatusColor(a.status)};border-radius:2px;padding:1px 3px;font-size:9px;color:#fff">${(a.time_start||'').substring(0,5)}</div>`).join('')}</div>` : ''
     html += `<div style="min-height:56px;border:1px solid ${isToday ? 'var(--accent)' : 'var(--border)'};border-radius:var(--r-xs);padding:4px;${isToday ? 'background:var(--accent-lt)' : ''}">
       <div style="font-size:12px;font-weight:${isToday ? '700' : '400'};color:${isToday ? 'var(--accent)' : 'var(--text)'}">${day}</div>
       ${dotHtml}
@@ -3107,7 +3113,7 @@ setInterval(() => {
 </div>
 
 <!-- ═══ EDY ASSISTANT ═══ -->
-<div id="edy-chat-panel" style="display:none;position:fixed;bottom:92px;right:24px;z-index:500;width:340px;height:480px;background:var(--bg);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden">
+<div id="edy-chat-panel" style="position:fixed;bottom:92px;right:24px;z-index:500;width:340px;height:480px;background:var(--bg);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.35);flex-direction:column;overflow:hidden;display:none">
   <div style="padding:14px 16px;background:var(--accent);display:flex;align-items:center;gap:10px;flex-shrink:0">
     <img src="./EDY.png" style="width:36px;height:36px;border-radius:50%;object-fit:cover;background:#fff"/>
     <div style="flex:1">
